@@ -1,0 +1,1237 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS Guardian | Audit & Vibe Coding</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        nexus: {
+                            50: '#f0f9ff',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                            dark: '#0f172a',
+                            surface: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Fira+Code:wght@400;500&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'Fira Code', monospace; }
+        
+        .glass {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .gradient-border {
+            position: relative;
+            border-radius: 1rem;
+            background: rgba(30, 41, 59, 0.5);
+            padding: 1px;
+        }
+        .gradient-border::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: 1rem;
+            padding: 1.5px;
+            background: linear-gradient(45deg, #0ea5e9, transparent, #6366f1);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            pointer-events: none;
+        }
+
+        .loader {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.1);
+            border-top-color: #0ea5e9;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .view-transition { transition: all 0.3s ease-in-out; }
+        .hidden { display: none; }
+        
+        .provider-card {
+            transition: all 0.3s;
+        }
+        .provider-card:hover {
+            transform: translateY(-2px);
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-connected { background: #10b981; box-shadow: 0 0 8px #10b981; }
+        .status-disconnected { background: #6b7280; }
+    </style>
+</head>
+<body class="bg-nexus-dark text-slate-200 min-h-screen flex flex-col selection:bg-nexus-500/30">
+
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
+
+    <nav class="glass sticky top-0 z-40 border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3 group cursor-pointer" onclick="app.showView('home')">
+                <div class="bg-nexus-600 p-2 rounded-xl shadow-lg shadow-nexus-600/20 group-hover:scale-110 transition-transform">
+                    <i data-lucide="shield-check" class="text-white w-5 h-5"></i>
+                </div>
+                <span class="font-extrabold text-xl tracking-tighter uppercase italic">Nexus <span class="text-nexus-500">Guardian</span></span>
+            </div>
+            
+            <div class="flex items-center gap-4">
+                <button onclick="app.showView('projects')" class="text-sm font-medium hover:text-nexus-500 transition-colors px-3 py-2">Projets</button>
+                <button onclick="app.showView('history')" class="text-sm font-medium hover:text-nexus-500 transition-colors px-3 py-2">Historique</button>
+                <button onclick="app.showView('config')" class="p-2 hover:bg-white/5 rounded-full transition-colors">
+                    <i data-lucide="settings" class="w-5 h-5 text-slate-400"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-6xl">
+        
+        <!-- VIEW: HOME -->
+        <section id="view-home" class="view-transition space-y-12 py-12">
+            <div class="text-center space-y-4">
+                <h1 class="text-5xl font-black text-white tracking-tight">Bienvenue dans le <span class="text-nexus-500 italic">Nexus</span>.</h1>
+                <p class="text-slate-400 text-lg max-w-2xl mx-auto">Choisissez votre workflow. Analyse de code existant ou création instantanée pilotée par l'intention.</p>
+                <div class="flex items-center justify-center gap-2 text-xs text-slate-600">
+                    <i data-lucide="database" class="w-3 h-3"></i>
+                    <span>Powered by IndexedDB</span>
+                </div>
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="glass p-4 rounded-xl text-center">
+                    <div class="text-3xl font-black text-nexus-500" id="stat-projects">0</div>
+                    <div class="text-xs text-slate-500 uppercase">Projets</div>
+                </div>
+                <div class="glass p-4 rounded-xl text-center">
+                    <div class="text-3xl font-black text-blue-500" id="stat-analyses">0</div>
+                    <div class="text-xs text-slate-500 uppercase">Analyses</div>
+                </div>
+                <div class="glass p-4 rounded-xl text-center">
+                    <div class="text-3xl font-black text-green-500" id="stat-providers">0</div>
+                    <div class="text-xs text-slate-500 uppercase">Providers</div>
+                </div>
+                <div class="glass p-4 rounded-xl text-center">
+                    <div class="text-3xl font-black text-purple-500" id="stat-storage">0</div>
+                    <div class="text-xs text-slate-500 uppercase">MB Utilisés</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
+                <div onclick="app.showView('audit')" class="gradient-border group cursor-pointer transition-all hover:scale-[1.02]">
+                    <div class="p-8 space-y-6">
+                        <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 group-hover:bg-blue-500/20">
+                            <i data-lucide="file-search" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">Mode Audit & Correction</h2>
+                        <p class="text-slate-400 text-sm leading-relaxed">Analysez un repo GitHub existant. Identifiez les failles, optimisez la performance et demandez des refactorings massifs.</p>
+                        <div class="flex items-center gap-2 text-blue-400 font-bold text-sm uppercase tracking-wider">
+                            Commencer l'audit <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div onclick="app.showView('vibe')" class="gradient-border group cursor-pointer transition-all hover:scale-[1.02]">
+                    <div class="p-8 space-y-6">
+                        <div class="w-12 h-12 bg-nexus-500/10 rounded-xl flex items-center justify-center text-nexus-400 group-hover:bg-nexus-500/20">
+                            <i data-lucide="wand-2" class="w-6 h-6"></i>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">Vibe Coding (Génération)</h2>
+                        <p class="text-slate-400 text-sm leading-relaxed">Décrivez votre projet. L'IA génère l'arborescence, le code, la documentation et les workflows GitHub Actions.</p>
+                        <div class="flex items-center gap-2 text-nexus-400 font-bold text-sm uppercase tracking-wider">
+                            Lancer une génération <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW: AUDIT -->
+        <section id="view-audit" class="view-transition hidden space-y-6">
+            <button onclick="app.showView('home')" class="flex items-center gap-2 text-slate-500 hover:text-white text-sm transition-colors">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> Retour à l'accueil
+            </button>
+            <div class="glass p-8 rounded-3xl space-y-6 border border-white/10">
+                <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                    <i data-lucide="git-pull-request" class="text-blue-400"></i> Analyser un Repository
+                </h2>
+                <div class="grid gap-4 md:grid-cols-4">
+                    <div class="md:col-span-3">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">URL du Repo (owner/repo)</label>
+                        <input type="text" id="audit-repo-input" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-blue-500" placeholder="ex: facebook/react">
+                    </div>
+                    <div class="md:col-span-1">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Branche</label>
+                        <input type="text" id="audit-repo-branch" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white outline-none" value="main">
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Profondeur d'Analyse</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <button onclick="app.setAuditDepth('skeleton')" id="depth-skeleton" class="depth-btn p-3 rounded-xl border border-white/10 text-sm text-left hover:bg-white/5 transition-all">
+                                <div class="font-bold">Squelette</div>
+                                <div class="text-[10px] text-slate-500">Architecture & Imports</div>
+                            </button>
+                            <button onclick="app.setAuditDepth('full')" id="depth-full" class="depth-btn p-3 rounded-xl border border-nexus-500 bg-nexus-500/10 text-sm text-left transition-all">
+                                <div class="font-bold">Intégrale</div>
+                                <div class="text-[10px] text-slate-500">Code ligne par ligne</div>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <label class="block text-xs font-bold text-slate-500 uppercase">Persona IA</label>
+                        <select id="audit-persona" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-sm">
+                            <option value="architect">Lead Architecte (Standard)</option>
+                            <option value="security">Expert Sécurité (Paranoïaque)</option>
+                            <option value="mentor">Mentor Dev (Pédagogique)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="app.runAudit()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2">
+                    LANCER L'ANALYSE SÉCURISÉE <i data-lucide="zap" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </section>
+
+        <!-- VIEW: VIBE -->
+        <section id="view-vibe" class="view-transition hidden space-y-6">
+            <button onclick="app.showView('home')" class="flex items-center gap-2 text-slate-500 hover:text-white text-sm transition-colors">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> Retour à l'accueil
+            </button>
+            <div class="glass p-8 rounded-3xl space-y-8 border border-white/10">
+                <div class="flex justify-between items-start">
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-3">
+                        <i data-lucide="wand-2" class="text-nexus-400"></i> Vibe Architect
+                    </h2>
+                    <span class="text-[10px] font-black bg-nexus-500 text-white px-2 py-1 rounded uppercase tracking-tighter">GENERATIVE MODE</span>
+                </div>
+
+                <div class="space-y-4">
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Votre Vision (Cahier des charges)</label>
+                    <textarea id="vibe-prompt" rows="6" class="w-full bg-slate-900/50 border border-white/5 rounded-2xl p-6 outline-none focus:ring-2 focus:ring-nexus-500 text-lg placeholder-slate-700" placeholder="Décrivez votre app... ex: Un dashboard SaaS en Next.js avec authentification et un workflow de test automatique."></textarea>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-slate-900/40 p-4 rounded-xl border border-white/5">
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2">
+                            <i data-lucide="package" class="w-3 h-3"></i> Stack
+                        </label>
+                        <select id="vibe-stack" class="w-full bg-transparent text-sm outline-none">
+                            <option value="react">React + Vite</option>
+                            <option value="nextjs">Next.js 14</option>
+                            <option value="node">Node.js Express</option>
+                            <option value="python">FastAPI Python</option>
+                        </select>
+                    </div>
+                    <div class="bg-slate-900/40 p-4 rounded-xl border border-white/5">
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2">
+                            <i data-lucide="git-merge" class="w-3 h-3"></i> DevOps
+                        </label>
+                        <select id="vibe-devops" class="w-full bg-transparent text-sm outline-none">
+                            <option value="gh-actions">GitHub Actions (Tests)</option>
+                            <option value="full">CI/CD Complet</option>
+                            <option value="none">Aucun</option>
+                        </select>
+                    </div>
+                    <div class="bg-slate-900/40 p-4 rounded-xl border border-white/5">
+                        <label class="flex items-center gap-2 text-xs font-bold text-slate-500 uppercase mb-2">
+                            <i data-lucide="eye" class="w-3 h-3"></i> Style
+                        </label>
+                        <select id="vibe-style" class="w-full bg-transparent text-sm outline-none">
+                            <option value="tailwind">Tailwind CSS</option>
+                            <option value="shadcn">Shadcn UI</option>
+                            <option value="mui">Material UI</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button onclick="app.runGeneration()" class="w-full bg-nexus-600 hover:bg-nexus-500 text-white font-black py-5 rounded-2xl shadow-xl shadow-nexus-500/20 transition-all uppercase tracking-widest italic">
+                    Générer le Repository Complet
+                </button>
+            </div>
+        </section>
+
+        <!-- VIEW: PROJECTS -->
+        <section id="view-projects" class="view-transition hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-black text-white">Mes Projets</h1>
+                <button onclick="app.showView('home')" class="text-sm text-slate-500 hover:text-white">Retour</button>
+            </div>
+            <div id="projects-list" class="space-y-4"></div>
+        </section>
+
+        <!-- VIEW: HISTORY -->
+        <section id="view-history" class="view-transition hidden space-y-6">
+            <div class="flex justify-between items-center">
+                <h1 class="text-3xl font-black text-white">Historique</h1>
+                <div class="flex gap-2">
+                    <button onclick="app.exportHistory()" class="text-sm bg-slate-800 px-4 py-2 rounded-lg hover:bg-slate-700">
+                        <i data-lucide="download" class="w-4 h-4 inline"></i> Exporter
+                    </button>
+                    <button onclick="app.showView('home')" class="text-sm text-slate-500 hover:text-white px-4 py-2">Retour</button>
+                </div>
+            </div>
+            <div id="history-list" class="space-y-4"></div>
+        </section>
+
+        <!-- VIEW: RESULTS -->
+        <section id="view-results" class="view-transition hidden space-y-6">
+            <div class="flex items-center justify-between">
+                <h2 id="results-title" class="text-2xl font-black text-white uppercase italic">Analyse en cours...</h2>
+                <button onclick="app.showView('home')" class="text-xs text-slate-500 hover:text-white uppercase font-bold">Fermer</button>
+            </div>
+
+            <div id="results-loader" class="glass p-20 rounded-3xl flex flex-col items-center justify-center space-y-6">
+                <div class="loader w-12 h-12 border-4"></div>
+                <div class="text-center">
+                    <p class="text-white font-bold text-xl animate-pulse" id="loader-status">Consultation de l'IA...</p>
+                    <p class="text-slate-500 text-sm mt-2" id="loader-subtext">Préparation du contexte</p>
+                </div>
+            </div>
+
+            <div id="results-content" class="hidden glass p-8 rounded-3xl prose prose-invert max-w-none prose-pre:bg-slate-900/50"></div>
+        </section>
+
+        <!-- VIEW: CONFIG -->
+        <section id="view-config" class="view-transition hidden space-y-6">
+            <button onclick="app.showView('home')" class="flex items-center gap-2 text-slate-500 hover:text-white text-sm transition-colors">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> Retour
+            </button>
+            
+            <div class="glass p-8 rounded-3xl space-y-6 border border-white/10">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="key" class="text-yellow-500"></i> Configuration GitHub
+                </h2>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">GitHub Token</label>
+                        <input type="password" id="cfg-gh-token" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:ring-1 focus:ring-nexus-500">
+                    </div>
+                    <button onclick="app.testGitHub()" class="px-6 py-2 bg-slate-800 rounded-xl font-bold text-sm hover:bg-slate-700">Tester la connexion</button>
+                </div>
+            </div>
+
+            <div class="glass p-8 rounded-3xl space-y-6 border border-white/10">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="brain" class="text-nexus-500"></i> Providers IA
+                    </h2>
+                    <button onclick="app.addProviderKey()" class="text-xs bg-nexus-600 px-3 py-1 rounded-lg font-bold hover:bg-nexus-500">+ Ajouter</button>
+                </div>
+                <div id="providers-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <div class="glass p-8 rounded-3xl space-y-6 border border-white/10">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="database" class="text-purple-500"></i> Gestion des Données
+                </h2>
+                <div class="grid grid-cols-2 gap-4">
+                    <button onclick="app.clearDatabase()" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl">
+                        <i data-lucide="trash-2" class="w-4 h-4 inline mr-2"></i>Effacer Tout
+                    </button>
+                    <button onclick="app.exportDatabase()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl">
+                        <i data-lucide="download" class="w-4 h-4 inline mr-2"></i>Exporter DB
+                    </button>
+                </div>
+            </div>
+
+            <button onclick="app.saveConfig()" class="w-full bg-nexus-600 hover:bg-nexus-500 text-white font-bold py-4 rounded-xl">Sauvegarder la Configuration</button>
+        </section>
+
+    </main>
+
+    <footer class="p-6 border-t border-white/5 text-center">
+        <p class="text-[10px] text-slate-600 uppercase font-black tracking-[0.2em]">Nexus Guardian V4.0 — IndexedDB Powered</p>
+    </footer>
+
+    <!-- Provider Modal -->
+    <div id="provider-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center">
+        <div class="glass p-8 rounded-3xl max-w-2xl w-full mx-4 space-y-6">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white" id="modal-provider-name"></h3>
+                <button onclick="app.closeProviderModal()" class="text-slate-500 hover:text-white">✕</button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Clé API</label>
+                    <input type="password" id="modal-api-key" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Rôle</label>
+                    <select id="modal-role" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white outline-none">
+                        <option value="">Désactivé</option>
+                        <option value="lead">Lead (Chef d'orchestre)</option>
+                        <option value="worker">Worker (Exécutant)</option>
+                    </select>
+                </div>
+                <button onclick="app.fetchModels()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl">Charger les Modèles</button>
+                <div id="modal-models" class="hidden space-y-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Modèles Disponibles</label>
+                    <select id="modal-model-select" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white outline-none"></select>
+                </div>
+            </div>
+            <button onclick="app.saveProvider()" class="w-full bg-nexus-600 hover:bg-nexus-500 text-white font-bold py-4 rounded-xl">Sauvegarder</button>
+        </div>
+    </div>
+
+    <script>
+        // ========== INDEXEDDB MANAGER ==========
+        const DB = {
+            name: 'nexus_guardian_v4',
+            version: 1,
+            db: null,
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(DB.name, DB.version);
+
+                    request.onerror = () => reject(request.error);
+                    request.onsuccess = () => {
+                        DB.db = request.result;
+                        resolve(DB.db);
+                    };
+
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+
+                        if (!db.objectStoreNames.contains('config')) {
+                            db.createObjectStore('config', { keyPath: 'id' });
+                        }
+                        if (!db.objectStoreNames.contains('providers')) {
+                            db.createObjectStore('providers', { keyPath: 'key' });
+                        }
+                        if (!db.objectStoreNames.contains('projects')) {
+                            const projectStore = db.createObjectStore('projects', { keyPath: 'id' });
+                            projectStore.createIndex('addedAt', 'addedAt', { unique: false });
+                        }
+                        if (!db.objectStoreNames.contains('analyses')) {
+                            const analysisStore = db.createObjectStore('analyses', { keyPath: 'id', autoIncrement: true });
+                            analysisStore.createIndex('projectId', 'projectId', { unique: false });
+                            analysisStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        }
+                        if (!db.objectStoreNames.contains('conversations')) {
+                            const convStore = db.createObjectStore('conversations', { keyPath: 'id', autoIncrement: true });
+                            convStore.createIndex('projectId', 'projectId', { unique: false });
+                        }
+                        if (!db.objectStoreNames.contains('cache')) {
+                            db.createObjectStore('cache', { keyPath: 'key' });
+                        }
+                    };
+                });
+            },
+
+            async get(store, key) {
+                const tx = DB.db.transaction(store, 'readonly');
+                const objectStore = tx.objectStore(store);
+                return new Promise((resolve, reject) => {
+                    const request = objectStore.get(key);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async getAll(store) {
+                const tx = DB.db.transaction(store, 'readonly');
+                const objectStore = tx.objectStore(store);
+                return new Promise((resolve, reject) => {
+                    const request = objectStore.getAll();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async put(store, data) {
+                const tx = DB.db.transaction(store, 'readwrite');
+                const objectStore = tx.objectStore(store);
+                return new Promise((resolve, reject) => {
+                    const request = objectStore.put(data);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async delete(store, key) {
+                const tx = DB.db.transaction(store, 'readwrite');
+                const objectStore = tx.objectStore(store);
+                return new Promise((resolve, reject) => {
+                    const request = objectStore.delete(key);
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async clear(store) {
+                const tx = DB.db.transaction(store, 'readwrite');
+                const objectStore = tx.objectStore(store);
+                return new Promise((resolve, reject) => {
+                    const request = objectStore.clear();
+                    request.onsuccess = () => resolve();
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async getByIndex(store, indexName, value) {
+                const tx = DB.db.transaction(store, 'readonly');
+                const objectStore = tx.objectStore(store);
+                const index = objectStore.index(indexName);
+                return new Promise((resolve, reject) => {
+                    const request = index.getAll(value);
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async count(store) {
+                const tx = DB.db.transaction(store, 'readonly');
+                const objectStore = tx.objectStore(store);
+                return new Promise((resolve, reject) => {
+                    const request = objectStore.count();
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                });
+            },
+
+            async estimateSize() {
+                if ('storage' in navigator && 'estimate' in navigator.storage) {
+                    const estimate = await navigator.storage.estimate();
+                    return {
+                        usage: estimate.usage,
+                        quota: estimate.quota,
+                        usageMB: (estimate.usage / (1024 * 1024)).toFixed(2),
+                        quotaMB: (estimate.quota / (1024 * 1024)).toFixed(2)
+                    };
+                }
+                return null;
+            }
+        };
+
+        // ========== PROVIDERS DEFINITIONS ==========
+        const PROVIDERS = {
+            anthropic: { name: 'Anthropic Claude', endpoint: 'https://api.anthropic.com/v1/messages', type: 'paid', modelsEndpoint: null, defaultModels: ['claude-sonnet-4-20250514', 'claude-opus-4-20250514'] },
+            groq: { name: 'Groq', endpoint: 'https://api.groq.com/openai/v1/chat/completions', type: 'free', modelsEndpoint: 'https://api.groq.com/openai/v1/models' },
+            openrouter: { name: 'OpenRouter', endpoint: 'https://openrouter.ai/api/v1/chat/completions', type: 'paid', modelsEndpoint: 'https://openrouter.ai/api/v1/models' },
+            huggingface: { name: 'Hugging Face', endpoint: 'https://api-inference.huggingface.co/models/', type: 'free', defaultModels: ['meta-llama/Llama-3.3-70B-Instruct', 'mistralai/Mixtral-8x7B-Instruct-v0.1'] },
+            openai: { name: 'OpenAI', endpoint: 'https://api.openai.com/v1/chat/completions', type: 'paid', modelsEndpoint: 'https://api.openai.com/v1/models' },
+            gemini: { name: 'Google Gemini', endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/', type: 'free', modelsEndpoint: 'https://generativelanguage.googleapis.com/v1beta/models' }
+        };
+
+        const PERSONAS = {
+            architect: {
+                name: 'Lead Architecte',
+                prompt: 'Tu es un architecte logiciel senior. Analyse ce code avec une vision holistique : architecture globale, patterns de design, scalabilité, maintenabilité. Propose des refactorings structurels.'
+            },
+            security: {
+                name: 'Expert Sécurité',
+                prompt: 'Tu es un expert en cybersécurité paranoïaque. Cherche toutes les vulnérabilités potentielles : injections SQL, XSS, CSRF, fuites de données, mauvaises pratiques crypto. Sois ultra-strict.'
+            },
+            mentor: {
+                name: 'Mentor Dev',
+                prompt: 'Tu es un mentor pédagogique bienveillant. Explique chaque problème trouvé de manière claire et éducative, avec des exemples de bonnes pratiques. Guide le développeur vers l\'amélioration.'
+            }
+        };
+
+        // ========== APPLICATION CORE ==========
+        const app = {
+            state: {
+                currentView: 'home',
+                auditDepth: 'full',
+                currentProvider: null
+            },
+
+            async init() {
+                try {
+                    await DB.init();
+                    lucide.createIcons();
+                    await app.loadConfig();
+                    await app.renderProviders();
+                    await app.renderProjects();
+                    await app.updateStats();
+                } catch (e) {
+                    console.error('Init error:', e);
+                    app.toast('Erreur d\'initialisation', 'error');
+                }
+            },
+
+            showView(view) {
+                document.querySelectorAll('.view-transition').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`view-${view}`).classList.remove('hidden');
+                app.state.currentView = view;
+                lucide.createIcons();
+                window.scrollTo(0, 0);
+                
+                if (view === 'projects') app.renderProjects();
+                if (view === 'history') app.renderHistory();
+            },
+
+            setAuditDepth(depth) {
+                app.state.auditDepth = depth;
+                document.querySelectorAll('.depth-btn').forEach(btn => {
+                    btn.classList.remove('border-nexus-500', 'bg-nexus-500/10');
+                    btn.classList.add('border-white/10');
+                });
+                const btn = document.getElementById(`depth-${depth}`);
+                btn.classList.add('border-nexus-500', 'bg-nexus-500/10');
+                btn.classList.remove('border-white/10');
+            },
+
+            toast(msg, type = 'success') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                const colors = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-yellow-500' };
+                toast.className = `${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg font-bold text-sm`;
+                toast.textContent = msg;
+                container.appendChild(toast);
+                setTimeout(() => toast.remove(), 3000);
+            },
+
+            async loadConfig() {
+                const config = await DB.get('config', 'main');
+                if (config?.github?.token) {
+                    document.getElementById('cfg-gh-token').value = config.github.token;
+                }
+            },
+
+            async saveConfig() {
+                await DB.put('config', {
+                    id: 'main',
+                    github: {
+                        token: document.getElementById('cfg-gh-token').value
+                    },
+                    updatedAt: Date.now()
+                });
+                app.toast('Configuration sauvegardée');
+            },
+
+            async testGitHub() {
+                const token = document.getElementById('cfg-gh-token').value;
+                if (!token) return app.toast('Veuillez entrer un token', 'error');
+                
+                try {
+                    const res = await fetch('https://api.github.com/user', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        app.toast(`✓ Connecté: ${data.login}`);
+                    } else {
+                        app.toast('Token invalide', 'error');
+                    }
+                } catch (e) {
+                    app.toast('Erreur de connexion', 'error');
+                }
+            },
+
+            async renderProviders() {
+                const grid = document.getElementById('providers-grid');
+                const providers = await DB.getAll('providers');
+                const providersMap = {};
+                providers.forEach(p => providersMap[p.key] = p);
+
+                grid.innerHTML = Object.keys(PROVIDERS).map(key => {
+                    const p = PROVIDERS[key];
+                    const cfg = providersMap[key] || {};
+                    const connected = cfg.apiKey && cfg.enabled;
+                    return `
+                        <div class="provider-card glass p-4 rounded-xl cursor-pointer" onclick="app.openProviderModal('${key}')">
+                            <div class="flex justify-between items-start mb-3">
+                                <div>
+                                    <div class="font-bold text-white">${p.name}</div>
+                                    <div class="text-xs text-slate-500">${p.type === 'free' ? 'Gratuit' : 'Payant'}</div>
+                                </div>
+                                <span class="status-dot ${connected ? 'status-connected' : 'status-disconnected'}"></span>
+                            </div>
+                            ${cfg.role ? `<div class="text-xs text-nexus-400 font-bold uppercase">${cfg.role}</div>` : ''}
+                            ${cfg.selectedModel ? `<div class="text-xs text-slate-600 mono mt-1 truncate">${cfg.selectedModel}</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+                lucide.createIcons();
+            },
+
+            async openProviderModal(key) {
+                app.state.currentProvider = key;
+                const p = PROVIDERS[key];
+                const cfg = await DB.get('providers', key) || {};
+                
+                document.getElementById('modal-provider-name').textContent = p.name;
+                document.getElementById('modal-api-key').value = cfg.apiKey || '';
+                document.getElementById('modal-role').value = cfg.role || '';
+                document.getElementById('modal-models').classList.add('hidden');
+                
+                if (cfg.models && cfg.models.length > 0) {
+                    app.renderModels(cfg.models, cfg.selectedModel);
+                    document.getElementById('modal-models').classList.remove('hidden');
+                }
+                
+                document.getElementById('provider-modal').classList.remove('hidden');
+                document.getElementById('provider-modal').classList.add('flex');
+            },
+
+            closeProviderModal() {
+                document.getElementById('provider-modal').classList.add('hidden');
+                document.getElementById('provider-modal').classList.remove('flex');
+            },
+
+            async fetchModels() {
+                const key = app.state.currentProvider;
+                const p = PROVIDERS[key];
+                const apiKey = document.getElementById('modal-api-key').value;
+                
+                if (!apiKey) return app.toast('Entrez une clé API', 'error');
+                
+                app.toast('Chargement des modèles...', 'warning');
+                
+                try {
+                    let models = [];
+                    
+                    if (p.defaultModels) {
+                        models = p.defaultModels;
+                    } else if (p.modelsEndpoint) {
+                        let url = p.modelsEndpoint;
+                        let headers = { 'Content-Type': 'application/json' };
+                        
+                        if (key === 'anthropic') {
+                            headers['x-api-key'] = apiKey;
+                            headers['anthropic-version'] = '2023-06-01';
+                        } else if (key === 'gemini') {
+                            url = `${url}?key=${apiKey}`;
+                        } else {
+                            headers['Authorization'] = `Bearer ${apiKey}`;
+                        }
+                        
+                        if (key === 'openrouter') {
+                            headers['HTTP-Referer'] = window.location.href;
+                            headers['X-Title'] = 'NEXUS Guardian';
+                        }
+                        
+                        const res = await fetch(url, { headers });
+                        if (!res.ok) throw new Error('Échec de connexion');
+                        
+                        const data = await res.json();
+                        
+                        if (key === 'groq' || key === 'openai') {
+                            models = data.data.map(m => m.id);
+                        } else if (key === 'openrouter') {
+                            models = data.data.map(m => ({ id: m.id, name: m.name }));
+                        } else if (key === 'gemini') {
+                            models = data.models.filter(m => m.name.includes('gemini')).map(m => m.name);
+                        }
+                    }
+                    
+                    const existing = await DB.get('providers', key) || { key };
+                    existing.models = models;
+                    await DB.put('providers', existing);
+                    
+                    app.renderModels(models);
+                    document.getElementById('modal-models').classList.remove('hidden');
+                    app.toast(`✓ ${models.length} modèles chargés`);
+                    
+                } catch (e) {
+                    app.toast('Erreur: ' + e.message, 'error');
+                }
+            },
+
+            renderModels(models, selectedModel = null) {
+                const select = document.getElementById('modal-model-select');
+                select.innerHTML = models.map(m => {
+                    const id = typeof m === 'string' ? m : m.id;
+                    const name = typeof m === 'string' ? m : (m.name || m.id);
+                    return `<option value="${id}" ${selectedModel === id ? 'selected' : ''}>${name}</option>`;
+                }).join('');
+            },
+
+            async saveProvider() {
+                const key = app.state.currentProvider;
+                const apiKey = document.getElementById('modal-api-key').value;
+                const role = document.getElementById('modal-role').value;
+                const modelSelect = document.getElementById('modal-model-select');
+                const selectedModel = modelSelect.value;
+                
+                if (!apiKey) return app.toast('Clé API requise', 'error');
+                
+                const existing = await DB.get('providers', key) || { key };
+                existing.apiKey = apiKey;
+                existing.role = role;
+                existing.enabled = role !== '';
+                if (selectedModel) existing.selectedModel = selectedModel;
+                
+                await DB.put('providers', existing);
+                
+                if (role === 'lead') {
+                    await DB.put('config', {
+                        id: 'lead',
+                        provider: key
+                    });
+                }
+                
+                await app.renderProviders();
+                await app.updateStats();
+                app.closeProviderModal();
+                app.toast('Provider configuré');
+            },
+
+            async runAudit() {
+                const repoInput = document.getElementById('audit-repo-input').value;
+                const branch = document.getElementById('audit-repo-branch').value;
+                const persona = document.getElementById('audit-persona').value;
+                const depth = app.state.auditDepth;
+                
+                if (!repoInput) return app.toast('Entrez un repo', 'error');
+                
+                const leadCfg = await DB.get('config', 'lead');
+                if (!leadCfg?.provider) return app.toast('Configurez un provider Lead', 'error');
+                
+                const provider = await DB.get('providers', leadCfg.provider);
+                if (!provider?.apiKey || !provider?.selectedModel) {
+                    return app.toast('Configuration Lead incomplète', 'error');
+                }
+                
+                app.showView('results');
+                document.getElementById('results-title').textContent = `Audit: ${repoInput}`;
+                document.getElementById('results-loader').classList.remove('hidden');
+                document.getElementById('results-content').classList.add('hidden');
+                
+                const status = document.getElementById('loader-status');
+                const sub = document.getElementById('loader-subtext');
+                
+                try {
+                    status.textContent = 'Récupération du repository...';
+                    sub.textContent = 'Connexion à GitHub API';
+                    
+                    const [owner, repo] = repoInput.split('/');
+                    const config = await DB.get('config', 'main');
+                    const token = config?.github?.token;
+                    
+                    if (!token) throw new Error('Token GitHub manquant');
+                    
+                    const treeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    
+                    if (!treeRes.ok) throw new Error('Repo non trouvé');
+                    
+                    const treeData = await treeRes.json();
+                    const files = treeData.tree.filter(f => f.type === 'blob');
+                    
+                    status.textContent = `Analyse ${depth === 'skeleton' ? 'squelette' : 'intégrale'}...`;
+                    sub.textContent = `${files.length} fichiers détectés`;
+                    
+                    await new Promise(r => setTimeout(r, 1000));
+                    
+                    status.textContent = `Consultation ${PERSONAS[persona].name}...`;
+                    sub.textContent = 'L\'IA compile les recommandations';
+                    
+                    const fileList = files.slice(0, depth === 'skeleton' ? 20 : 50).map(f => f.path).join('\n');
+                    
+                    const prompt = `${PERSONAS[persona].prompt}
+
+Repository: ${owner}/${repo}
+Branche: ${branch}
+Profondeur: ${depth === 'skeleton' ? 'Architecture uniquement' : 'Analyse complète'}
+Fichiers (${files.length} total):
+${fileList}
+
+Fournis un rapport d'audit complet au format Markdown avec:
+1. Résumé de santé (complexité, sécurité, dette technique)
+2. Problèmes critiques identifiés
+3. Recommandations d'amélioration
+4. Plan d'action concret`;
+                    
+                    const aiResponse = await app.callAI(leadCfg.provider, provider, prompt);
+                    
+                    const projectId = `${owner}/${repo}`;
+                    await DB.put('projects', {
+                        id: projectId,
+                        owner,
+                        repo,
+                        branch,
+                        addedAt: Date.now(),
+                        lastAccessedAt: Date.now()
+                    });
+                    
+                    await DB.put('analyses', {
+                        projectId,
+                        timestamp: Date.now(),
+                        persona,
+                        depth,
+                        provider: leadCfg.provider,
+                        model: provider.selectedModel,
+                        filesCount: files.length,
+                        result: aiResponse
+                    });
+                    
+                    await app.updateStats();
+                    app.displayResults(aiResponse);
+                    
+                } catch (e) {
+                    app.toast('Erreur: ' + e.message, 'error');
+                    app.showView('audit');
+                }
+            },
+
+            async runGeneration() {
+                const prompt = document.getElementById('vibe-prompt').value;
+                const stack = document.getElementById('vibe-stack').value;
+                const devops = document.getElementById('vibe-devops').value;
+                const style = document.getElementById('vibe-style').value;
+                
+                if (!prompt) return app.toast('Décrivez votre projet', 'error');
+                
+                const leadCfg = await DB.get('config', 'lead');
+                if (!leadCfg?.provider) return app.toast('Configurez un provider Lead', 'error');
+                
+                const provider = await DB.get('providers', leadCfg.provider);
+                if (!provider?.apiKey || !provider?.selectedModel) {
+                    return app.toast('Configuration Lead incomplète', 'error');
+                }
+                
+                app.showView('results');
+                document.getElementById('results-title').textContent = 'Génération Vibe';
+                document.getElementById('results-loader').classList.remove('hidden');
+                document.getElementById('results-content').classList.add('hidden');
+                
+                const status = document.getElementById('loader-status');
+                const sub = document.getElementById('loader-subtext');
+                
+                try {
+                    status.textContent = 'Structuration de l\'architecture...';
+                    sub.textContent = 'Conception de l\'arborescence';
+                    await new Promise(r => setTimeout(r, 1200));
+                    
+                    status.textContent = 'Génération du code source...';
+                    sub.textContent = 'Écriture des composants';
+                    await new Promise(r => setTimeout(r, 1500));
+                    
+                    status.textContent = 'Auto-DevOps Engineering...';
+                    sub.textContent = 'Configuration CI/CD';
+                    
+                    const genPrompt = `Tu es un architecte génératif expert. Génère un projet complet basé sur:
+
+Vision: ${prompt}
+Stack: ${stack}
+DevOps: ${devops}
+Style: ${style}
+
+Fournis au format Markdown:
+1. Arborescence complète du projet
+2. Fichiers clés avec leur contenu (package.json, README, fichiers config)
+3. ${devops !== 'none' ? 'Fichier GitHub Actions YAML complet avec tests automatiques' : 'Structure de base'}
+4. Instructions de setup et déploiement
+5. Bonnes pratiques appliquées
+
+Sois exhaustif et professionnel.`;
+                    
+                    const aiResponse = await app.callAI(leadCfg.provider, provider, genPrompt);
+                    
+                    const projectName = prompt.substring(0, 30).replace(/[^a-zA-Z0-9]/g, '-');
+                    await DB.put('projects', {
+                        id: `generated-${Date.now()}`,
+                        name: projectName,
+                        type: 'generated',
+                        addedAt: Date.now(),
+                        stack,
+                        devops,
+                        style
+                    });
+                    
+                    await DB.put('analyses', {
+                        projectId: projectName,
+                        timestamp: Date.now(),
+                        type: 'generation',
+                        provider: leadCfg.provider,
+                        model: provider.selectedModel,
+                        prompt,
+                        result: aiResponse
+                    });
+                    
+                    await app.updateStats();
+                    app.displayResults(aiResponse);
+                    
+                } catch (e) {
+                    app.toast('Erreur: ' + e.message, 'error');
+                    app.showView('vibe');
+                }
+            },
+
+            async callAI(providerKey, config, prompt) {
+                const p = PROVIDERS[providerKey];
+                const { apiKey, selectedModel } = config;
+                
+                let url = p.endpoint;
+                let headers = { 'Content-Type': 'application/json' };
+                let body = {};
+                
+                if (providerKey === 'anthropic') {
+                    headers['x-api-key'] = apiKey;
+                    headers['anthropic-version'] = '2023-06-01';
+                    body = {
+                        model: selectedModel,
+                        max_tokens: 4096,
+                        messages: [{ role: 'user', content: prompt }]
+                    };
+                } else if (providerKey === 'groq' || providerKey === 'openai' || providerKey === 'openrouter') {
+                    headers['Authorization'] = `Bearer ${apiKey}`;
+                    if (providerKey === 'openrouter') {
+                        headers['HTTP-Referer'] = window.location.href;
+                        headers['X-Title'] = 'NEXUS Guardian';
+                    }
+                    body = {
+                        model: selectedModel,
+                        messages: [{ role: 'user', content: prompt }],
+                        max_tokens: 4096
+                    };
+                } else if (providerKey === 'huggingface') {
+                    headers['Authorization'] = `Bearer ${apiKey}`;
+                    url = p.endpoint + selectedModel;
+                    body = {
+                        inputs: prompt,
+                        parameters: { max_new_tokens: 2000 }
+                    };
+                } else if (providerKey === 'gemini') {
+                    url = `${p.endpoint}${selectedModel}:generateContent?key=${apiKey}`;
+                    body = {
+                        contents: [{ parts: [{ text: prompt }] }]
+                    };
+                }
+                
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers,
+                    body: JSON.stringify(body)
+                });
+                
+                if (!res.ok) {
+                    throw new Error(`API Error: ${res.status}`);
+                }
+                
+                const data = await res.json();
+                
+                if (providerKey === 'anthropic') {
+                    return data.content[0].text;
+                } else if (providerKey === 'groq' || providerKey === 'openai' || providerKey === 'openrouter') {
+                    return data.choices[0].message.content;
+                } else if (providerKey === 'huggingface') {
+                    return data[0]?.generated_text || data.generated_text;
+                } else if (providerKey === 'gemini') {
+                    return data.candidates[0].content.parts[0].text;
+                }
+                
+                return '';
+            },
+
+            displayResults(markdown) {
+                document.getElementById('results-loader').classList.add('hidden');
+                const content = document.getElementById('results-content');
+                content.classList.remove('hidden');
+                content.innerHTML = marked.parse(markdown);
+                lucide.createIcons();
+            },
+
+            async renderProjects() {
+                const list = document.getElementById('projects-list');
+                const projects = await DB.getAll('projects');
+                
+                if (projects.length === 0) {
+                    list.innerHTML = `
+                        <div class="glass p-8 rounded-2xl text-center text-slate-500">
+                            <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-4 opacity-30"></i>
+                            <p>Aucun projet pour le moment</p>
+                        </div>
+                    `;
+                } else {
+                    list.innerHTML = projects.map(proj => {
+                        return `
+                            <div class="glass p-6 rounded-xl">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h3 class="font-bold text-white text-lg">${proj.id}</h3>
+                                        <p class="text-xs text-slate-500 mt-1">Ajouté le ${new Date(proj.addedAt).toLocaleDateString()}</p>
+                                        ${proj.type === 'generated' ? '<span class="text-xs bg-nexus-500 px-2 py-1 rounded mt-2 inline-block">Généré</span>' : ''}
+                                    </div>
+                                    <button onclick="app.deleteProject('${proj.id}')" class="text-red-500 hover:text-red-400">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                lucide.createIcons();
+            },
+
+            async renderHistory() {
+                const list = document.getElementById('history-list');
+                const analyses = await DB.getAll('analyses');
+                analyses.sort((a, b) => b.timestamp - a.timestamp);
+                
+                if (analyses.length === 0) {
+                    list.innerHTML = `
+                        <div class="glass p-8 rounded-2xl text-center text-slate-500">
+                            <i data-lucide="history" class="w-12 h-12 mx-auto mb-4 opacity-30"></i>
+                            <p>Aucune analyse enregistrée</p>
+                        </div>
+                    `;
+                } else {
+                    list.innerHTML = analyses.map(analysis => {
+                        const type = analysis.type === 'generation' ? 'Génération' : 'Audit';
+                        const icon = analysis.type === 'generation' ? 'wand-2' : 'file-search';
+                        return `
+                            <div class="glass p-6 rounded-xl">
+                                <div class="flex items-start gap-4">
+                                    <div class="w-10 h-10 bg-nexus-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <i data-lucide="${icon}" class="w-5 h-5 text-nexus-400"></i>
+                                    </div>
+                                    <div class="flex-grow">
+                                        <div class="flex justify-between">
+                                            <h3 class="font-bold text-white">${type}: ${analysis.projectId}</h3>
+                                            <span class="text-xs text-slate-500">${new Date(analysis.timestamp).toLocaleString()}</span>
+                                        </div>
+                                        <p class="text-xs text-slate-400 mt-1">Provider: ${analysis.provider} • Modèle: ${analysis.model}</p>
+                                        ${analysis.persona ? `<p class="text-xs text-nexus-400 mt-1">Persona: ${PERSONAS[analysis.persona].name}</p>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                lucide.createIcons();
+            },
+
+            async deleteProject(id) {
+                if (confirm('Supprimer ce projet ?')) {
+                    await DB.delete('projects', id);
+                    await app.renderProjects();
+                    await app.updateStats();
+                    app.toast('Projet supprimé');
+                }
+            },
+
+            async updateStats() {
+                const projectsCount = await DB.count('projects');
+                const analysesCount = await DB.count('analyses');
+                const providers = await DB.getAll('providers');
+                const enabledProviders = providers.filter(p => p.enabled).length;
+                const storage = await DB.estimateSize();
+                
+                document.getElementById('stat-projects').textContent = projectsCount;
+                document.getElementById('stat-analyses').textContent = analysesCount;
+                document.getElementById('stat-providers').textContent = enabledProviders;
+                document.getElementById('stat-storage').textContent = storage ? storage.usageMB : '0';
+            },
+
+            async clearDatabase() {
+                if (!confirm('⚠️ ATTENTION: Cela supprimera TOUTES vos données (projets, analyses, configurations). Continuer ?')) {
+                    return;
+                }
+                
+                try {
+                    await DB.clear('projects');
+                    await DB.clear('analyses');
+                    await DB.clear('conversations');
+                    await DB.clear('cache');
+                    
+                    app.toast('Base de données effacée');
+                    await app.updateStats();
+                    await app.renderProjects();
+                } catch (e) {
+                    app.toast('Erreur lors de l\'effacement', 'error');
+                }
+            },
+
+            async exportDatabase() {
+                try {
+                    const data = {
+                        config: await DB.getAll('config'),
+                        providers: await DB.getAll('providers'),
+                        projects: await DB.getAll('projects'),
+                        analyses: await DB.getAll('analyses'),
+                        conversations: await DB.getAll('conversations'),
+                        exportedAt: Date.now()
+                    };
+                    
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `nexus-guardian-backup-${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    
+                    app.toast('Base de données exportée');
+                } catch (e) {
+                    app.toast('Erreur lors de l\'export', 'error');
+                }
+            },
+
+            async exportHistory() {
+                try {
+                    const analyses = await DB.getAll('analyses');
+                    const blob = new Blob([JSON.stringify(analyses, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `nexus-history-${Date.now()}.json`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    
+                    app.toast('Historique exporté');
+                } catch (e) {
+                    app.toast('Erreur lors de l\'export', 'error');
+                }
+            },
+
+            addProviderKey() {
+                const providers = Object.keys(PROVIDERS);
+                const unconfigured = providers.find(async k => {
+                    const cfg = await DB.get('providers', k);
+                    return !cfg?.apiKey;
+                });
+                if (unconfigured) {
+                    app.openProviderModal(unconfigured);
+                } else {
+                    app.openProviderModal(providers[0]);
+                }
+            }
+        };
+
+        // Initialize app when DOM is ready
+        window.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+</body>
+</html>
