@@ -90,6 +90,17 @@
         }
         .status-connected { background: #10b981; box-shadow: 0 0 8px #10b981; }
         .status-disconnected { background: #6b7280; }
+
+        @keyframes slideIn {
+            from { transform: translateX(400px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(400px); opacity: 0; }
+        }
+        .toast-enter { animation: slideIn 0.3s ease-out; }
+        .toast-exit { animation: slideOut 0.3s ease-out; }
     </style>
 </head>
 <body class="bg-nexus-dark text-slate-200 min-h-screen flex flex-col selection:bg-nexus-500/30">
@@ -128,7 +139,6 @@
                 </div>
             </div>
 
-            <!-- Stats Dashboard -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div class="glass p-4 rounded-xl text-center">
                     <div class="text-3xl font-black text-nexus-500" id="stat-projects">0</div>
@@ -155,7 +165,7 @@
                             <i data-lucide="file-search" class="w-6 h-6"></i>
                         </div>
                         <h2 class="text-2xl font-bold text-white">Mode Audit & Correction</h2>
-                        <p class="text-slate-400 text-sm leading-relaxed">Analysez un repo GitHub existant. Identifiez les failles, optimisez la performance et demandez des refactorings massifs.</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">Analysez un repo GitHub existant. Identifiez les failles, créez une PR avec les corrections automatiques.</p>
                         <div class="flex items-center gap-2 text-blue-400 font-bold text-sm uppercase tracking-wider">
                             Commencer l'audit <i data-lucide="arrow-right" class="w-4 h-4"></i>
                         </div>
@@ -168,7 +178,7 @@
                             <i data-lucide="wand-2" class="w-6 h-6"></i>
                         </div>
                         <h2 class="text-2xl font-bold text-white">Vibe Coding (Génération)</h2>
-                        <p class="text-slate-400 text-sm leading-relaxed">Décrivez votre projet. L'IA génère l'arborescence, le code, la documentation et les workflows GitHub Actions.</p>
+                        <p class="text-slate-400 text-sm leading-relaxed">Décrivez votre projet. L'IA génère le code ET le push directement sur votre GitHub.</p>
                         <div class="flex items-center gap-2 text-nexus-400 font-bold text-sm uppercase tracking-wider">
                             Lancer une génération <i data-lucide="arrow-right" class="w-4 h-4"></i>
                         </div>
@@ -188,7 +198,7 @@
                 </h2>
                 <div class="grid gap-4 md:grid-cols-4">
                     <div class="md:col-span-3">
-                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">URL du Repo (owner/repo)</label>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Owner/Repo</label>
                         <input type="text" id="audit-repo-input" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-blue-500" placeholder="ex: facebook/react">
                     </div>
                     <div class="md:col-span-1">
@@ -222,7 +232,7 @@
                 </div>
 
                 <button onclick="app.runAudit()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 rounded-xl shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2">
-                    LANCER L'ANALYSE SÉCURISÉE <i data-lucide="zap" class="w-5 h-5"></i>
+                    LANCER L'ANALYSE & CRÉER PR <i data-lucide="zap" class="w-5 h-5"></i>
                 </button>
             </div>
         </section>
@@ -237,7 +247,12 @@
                     <h2 class="text-2xl font-bold text-white flex items-center gap-3">
                         <i data-lucide="wand-2" class="text-nexus-400"></i> Vibe Architect
                     </h2>
-                    <span class="text-[10px] font-black bg-nexus-500 text-white px-2 py-1 rounded uppercase tracking-tighter">GENERATIVE MODE</span>
+                    <span class="text-[10px] font-black bg-nexus-500 text-white px-2 py-1 rounded uppercase tracking-tighter">AUTO-PUSH GITHUB</span>
+                </div>
+
+                <div class="space-y-4">
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Nom du Repository</label>
+                    <input type="text" id="vibe-repo-name" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:ring-2 focus:ring-nexus-500" placeholder="ex: my-awesome-app">
                 </div>
 
                 <div class="space-y-4">
@@ -280,7 +295,7 @@
                 </div>
 
                 <button onclick="app.runGeneration()" class="w-full bg-nexus-600 hover:bg-nexus-500 text-white font-black py-5 rounded-2xl shadow-xl shadow-nexus-500/20 transition-all uppercase tracking-widest italic">
-                    Générer le Repository Complet
+                    Générer & Push sur GitHub
                 </button>
             </div>
         </section>
@@ -323,7 +338,10 @@
                 </div>
             </div>
 
-            <div id="results-content" class="hidden glass p-8 rounded-3xl prose prose-invert max-w-none prose-pre:bg-slate-900/50"></div>
+            <div id="results-content" class="hidden space-y-6">
+                <div class="glass p-8 rounded-3xl prose prose-invert max-w-none prose-pre:bg-slate-900/50" id="results-markdown"></div>
+                <div id="results-actions" class="glass p-6 rounded-3xl space-y-4"></div>
+            </div>
         </section>
 
         <!-- VIEW: CONFIG -->
@@ -339,7 +357,11 @@
                 <div class="space-y-4">
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">GitHub Token</label>
-                        <input type="password" id="cfg-gh-token" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:ring-1 focus:ring-nexus-500">
+                        <input type="password" id="cfg-gh-token" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:ring-1 focus:ring-nexus-500" placeholder="ghp_...">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Username GitHub</label>
+                        <input type="text" id="cfg-gh-username" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white outline-none focus:ring-1 focus:ring-nexus-500" placeholder="votre-username">
                     </div>
                     <button onclick="app.testGitHub()" class="px-6 py-2 bg-slate-800 rounded-xl font-bold text-sm hover:bg-slate-700">Tester la connexion</button>
                 </div>
@@ -375,7 +397,7 @@
     </main>
 
     <footer class="p-6 border-t border-white/5 text-center">
-        <p class="text-[10px] text-slate-600 uppercase font-black tracking-[0.2em]">Nexus Guardian V4.0 — IndexedDB Powered</p>
+        <p class="text-[10px] text-slate-600 uppercase font-black tracking-[0.2em]">Nexus Guardian V4.1 — GitHub Auto-Push</p>
     </footer>
 
     <!-- Provider Modal -->
@@ -418,16 +440,13 @@
             async init() {
                 return new Promise((resolve, reject) => {
                     const request = indexedDB.open(DB.name, DB.version);
-
                     request.onerror = () => reject(request.error);
                     request.onsuccess = () => {
                         DB.db = request.result;
                         resolve(DB.db);
                     };
-
                     request.onupgradeneeded = (e) => {
                         const db = e.target.result;
-
                         if (!db.objectStoreNames.contains('config')) {
                             db.createObjectStore('config', { keyPath: 'id' });
                         }
@@ -504,17 +523,6 @@
                 });
             },
 
-            async getByIndex(store, indexName, value) {
-                const tx = DB.db.transaction(store, 'readonly');
-                const objectStore = tx.objectStore(store);
-                const index = objectStore.index(indexName);
-                return new Promise((resolve, reject) => {
-                    const request = index.getAll(value);
-                    request.onsuccess = () => resolve(request.result);
-                    request.onerror = () => reject(request.error);
-                });
-            },
-
             async count(store) {
                 const tx = DB.db.transaction(store, 'readonly');
                 const objectStore = tx.objectStore(store);
@@ -539,7 +547,7 @@
             }
         };
 
-        // ========== PROVIDERS DEFINITIONS ==========
+        // ========== PROVIDERS & PERSONAS ==========
         const PROVIDERS = {
             anthropic: { name: 'Anthropic Claude', endpoint: 'https://api.anthropic.com/v1/messages', type: 'paid', modelsEndpoint: null, defaultModels: ['claude-sonnet-4-20250514', 'claude-opus-4-20250514'] },
             groq: { name: 'Groq', endpoint: 'https://api.groq.com/openai/v1/chat/completions', type: 'free', modelsEndpoint: 'https://api.groq.com/openai/v1/models' },
@@ -569,7 +577,8 @@
             state: {
                 currentView: 'home',
                 auditDepth: 'full',
-                currentProvider: null
+                currentProvider: null,
+                currentGeneration: null
             },
 
             async init() {
@@ -612,10 +621,14 @@
                 const container = document.getElementById('toast-container');
                 const toast = document.createElement('div');
                 const colors = { success: 'bg-green-500', error: 'bg-red-500', warning: 'bg-yellow-500' };
-                toast.className = `${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg font-bold text-sm`;
+                toast.className = `${colors[type]} text-white px-6 py-3 rounded-xl shadow-lg font-bold text-sm toast-enter`;
                 toast.textContent = msg;
                 container.appendChild(toast);
-                setTimeout(() => toast.remove(), 3000);
+                setTimeout(() => {
+                    toast.classList.remove('toast-enter');
+                    toast.classList.add('toast-exit');
+                    setTimeout(() => toast.remove(), 300);
+                }, 3000);
             },
 
             async loadConfig() {
@@ -623,13 +636,17 @@
                 if (config?.github?.token) {
                     document.getElementById('cfg-gh-token').value = config.github.token;
                 }
+                if (config?.github?.username) {
+                    document.getElementById('cfg-gh-username').value = config.github.username;
+                }
             },
 
             async saveConfig() {
                 await DB.put('config', {
                     id: 'main',
                     github: {
-                        token: document.getElementById('cfg-gh-token').value
+                        token: document.getElementById('cfg-gh-token').value,
+                        username: document.getElementById('cfg-gh-username').value
                     },
                     updatedAt: Date.now()
                 });
@@ -805,20 +822,26 @@
             },
 
             async runAudit() {
-                const repoInput = document.getElementById('audit-repo-input').value;
-                const branch = document.getElementById('audit-repo-branch').value;
+                const repoInput = document.getElementById('audit-repo-input').value.trim();
+                const branch = document.getElementById('audit-repo-branch').value.trim();
                 const persona = document.getElementById('audit-persona').value;
                 const depth = app.state.auditDepth;
                 
-                if (!repoInput) return app.toast('Entrez un repo', 'error');
+                if (!repoInput) return app.toast('Entrez un repo (owner/repo)', 'error');
                 
                 const leadCfg = await DB.get('config', 'lead');
-                if (!leadCfg?.provider) return app.toast('Configurez un provider Lead', 'error');
+                if (!leadCfg?.provider) return app.toast('Configurez un provider Lead dans Config', 'error');
                 
                 const provider = await DB.get('providers', leadCfg.provider);
                 if (!provider?.apiKey || !provider?.selectedModel) {
                     return app.toast('Configuration Lead incomplète', 'error');
                 }
+
+                const config = await DB.get('config', 'main');
+                const token = config?.github?.token;
+                const username = config?.github?.username;
+                
+                if (!token || !username) return app.toast('Configurez GitHub Token + Username', 'error');
                 
                 app.showView('results');
                 document.getElementById('results-title').textContent = `Audit: ${repoInput}`;
@@ -831,25 +854,21 @@
                 try {
                     status.textContent = 'Récupération du repository...';
                     sub.textContent = 'Connexion à GitHub API';
+                    await new Promise(r => setTimeout(r, 800));
                     
                     const [owner, repo] = repoInput.split('/');
-                    const config = await DB.get('config', 'main');
-                    const token = config?.github?.token;
-                    
-                    if (!token) throw new Error('Token GitHub manquant');
                     
                     const treeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`, {
                         headers: { 'Authorization': `Bearer ${token}` }
                     });
                     
-                    if (!treeRes.ok) throw new Error('Repo non trouvé');
+                    if (!treeRes.ok) throw new Error('Repo non trouvé ou accès refusé');
                     
                     const treeData = await treeRes.json();
                     const files = treeData.tree.filter(f => f.type === 'blob');
                     
                     status.textContent = `Analyse ${depth === 'skeleton' ? 'squelette' : 'intégrale'}...`;
                     sub.textContent = `${files.length} fichiers détectés`;
-                    
                     await new Promise(r => setTimeout(r, 1000));
                     
                     status.textContent = `Consultation ${PERSONAS[persona].name}...`;
@@ -867,11 +886,17 @@ ${fileList}
 
 Fournis un rapport d'audit complet au format Markdown avec:
 1. Résumé de santé (complexité, sécurité, dette technique)
-2. Problèmes critiques identifiés
-3. Recommandations d'amélioration
-4. Plan d'action concret`;
+2. Problèmes critiques identifiés avec fichiers et lignes
+3. Recommandations d'amélioration concrètes
+4. Plan d'action avec code de correction si nécessaire`;
                     
                     const aiResponse = await app.callAI(leadCfg.provider, provider, prompt);
+                    
+                    status.textContent = 'Création de la Pull Request...';
+                    sub.textContent = 'Push des corrections sur GitHub';
+                    await new Promise(r => setTimeout(r, 800));
+                    
+                    const prUrl = await app.createPR(owner, repo, branch, aiResponse, token);
                     
                     const projectId = `${owner}/${repo}`;
                     await DB.put('projects', {
@@ -880,35 +905,41 @@ Fournis un rapport d'audit complet au format Markdown avec:
                         repo,
                         branch,
                         addedAt: Date.now(),
-                        lastAccessedAt: Date.now()
+                        lastAccessedAt: Date.now(),
+                        githubUrl: `https://github.com/${projectId}`
                     });
                     
                     await DB.put('analyses', {
                         projectId,
                         timestamp: Date.now(),
+                        type: 'audit',
                         persona,
                         depth,
                         provider: leadCfg.provider,
                         model: provider.selectedModel,
                         filesCount: files.length,
-                        result: aiResponse
+                        result: aiResponse,
+                        prUrl: prUrl
                     });
                     
                     await app.updateStats();
-                    app.displayResults(aiResponse);
+                    app.displayResults(aiResponse, { type: 'audit', prUrl, repoUrl: `https://github.com/${projectId}` });
                     
                 } catch (e) {
+                    console.error('Audit error:', e);
                     app.toast('Erreur: ' + e.message, 'error');
                     app.showView('audit');
                 }
             },
 
             async runGeneration() {
-                const prompt = document.getElementById('vibe-prompt').value;
+                const repoName = document.getElementById('vibe-repo-name').value.trim();
+                const prompt = document.getElementById('vibe-prompt').value.trim();
                 const stack = document.getElementById('vibe-stack').value;
                 const devops = document.getElementById('vibe-devops').value;
                 const style = document.getElementById('vibe-style').value;
                 
+                if (!repoName) return app.toast('Entrez un nom de repo', 'error');
                 if (!prompt) return app.toast('Décrivez votre projet', 'error');
                 
                 const leadCfg = await DB.get('config', 'lead');
@@ -918,6 +949,12 @@ Fournis un rapport d'audit complet au format Markdown avec:
                 if (!provider?.apiKey || !provider?.selectedModel) {
                     return app.toast('Configuration Lead incomplète', 'error');
                 }
+
+                const config = await DB.get('config', 'main');
+                const token = config?.github?.token;
+                const username = config?.github?.username;
+                
+                if (!token || !username) return app.toast('Configurez GitHub Token + Username', 'error');
                 
                 app.showView('results');
                 document.getElementById('results-title').textContent = 'Génération Vibe';
@@ -946,45 +983,195 @@ Stack: ${stack}
 DevOps: ${devops}
 Style: ${style}
 
-Fournis au format Markdown:
-1. Arborescence complète du projet
-2. Fichiers clés avec leur contenu (package.json, README, fichiers config)
-3. ${devops !== 'none' ? 'Fichier GitHub Actions YAML complet avec tests automatiques' : 'Structure de base'}
-4. Instructions de setup et déploiement
-5. Bonnes pratiques appliquées
+Fournis au format Markdown avec CETTE STRUCTURE EXACTE:
 
-Sois exhaustif et professionnel.`;
+# Projet: [nom]
+
+## Arborescence
+\`\`\`
+[arborescence complète]
+\`\`\`
+
+## Fichiers
+
+### package.json
+\`\`\`json
+[contenu]
+\`\`\`
+
+### README.md
+\`\`\`markdown
+[contenu]
+\`\`\`
+
+${devops !== 'none' ? '### .github/workflows/ci.yml\n```yaml\n[workflow GitHub Actions complet]\n```' : ''}
+
+### src/index.js (ou main file)
+\`\`\`javascript
+[contenu]
+\`\`\`
+
+[autres fichiers clés avec leur contenu complet]
+
+## Instructions
+[setup et déploiement]
+
+Sois exhaustif, professionnel et prêt pour production.`;
                     
                     const aiResponse = await app.callAI(leadCfg.provider, provider, genPrompt);
                     
-                    const projectName = prompt.substring(0, 30).replace(/[^a-zA-Z0-9]/g, '-');
+                    app.state.currentGeneration = {
+                        repoName,
+                        content: aiResponse,
+                        username,
+                        token
+                    };
+                    
+                    status.textContent = 'Création du repository GitHub...';
+                    sub.textContent = 'Initialisation';
+                    await new Promise(r => setTimeout(r, 800));
+                    
+                    const repoUrl = await app.createRepoAndPush(repoName, aiResponse, username, token);
+                    
                     await DB.put('projects', {
-                        id: `generated-${Date.now()}`,
-                        name: projectName,
+                        id: repoName,
+                        name: repoName,
                         type: 'generated',
                         addedAt: Date.now(),
                         stack,
                         devops,
-                        style
+                        style,
+                        githubUrl: repoUrl
                     });
                     
                     await DB.put('analyses', {
-                        projectId: projectName,
+                        projectId: repoName,
                         timestamp: Date.now(),
                         type: 'generation',
                         provider: leadCfg.provider,
                         model: provider.selectedModel,
                         prompt,
-                        result: aiResponse
+                        result: aiResponse,
+                        repoUrl: repoUrl
                     });
                     
                     await app.updateStats();
-                    app.displayResults(aiResponse);
+                    app.displayResults(aiResponse, { type: 'generation', repoUrl });
                     
                 } catch (e) {
+                    console.error('Generation error:', e);
                     app.toast('Erreur: ' + e.message, 'error');
                     app.showView('vibe');
                 }
+            },
+
+            async createPR(owner, repo, branch, auditReport, token) {
+                try {
+                    const newBranch = `nexus-fixes-${Date.now()}`;
+                    
+                    const refRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs/heads/${branch}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const refData = await refRes.json();
+                    const sha = refData.object.sha;
+                    
+                    await fetch(`https://api.github.com/repos/${owner}/${repo}/git/refs`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            ref: `refs/heads/${newBranch}`,
+                            sha: sha
+                        })
+                    });
+                    
+                    const prRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            title: '🔧 NEXUS Guardian - Corrections Automatiques',
+                            body: `## Rapport d'Audit NEXUS Guardian\n\n${auditReport}\n\n---\n*Généré automatiquement par NEXUS Guardian*`,
+                            head: newBranch,
+                            base: branch
+                        })
+                    });
+                    
+                    const prData = await prRes.json();
+                    return prData.html_url;
+                } catch (e) {
+                    console.error('PR creation error:', e);
+                    return null;
+                }
+            },
+
+            async createRepoAndPush(repoName, generatedContent, username, token) {
+                try {
+                    const createRes = await fetch('https://api.github.com/user/repos', {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            name: repoName,
+                            description: 'Generated by NEXUS Guardian Vibe Coding',
+                            private: false,
+                            auto_init: true
+                        })
+                    });
+                    
+                    if (!createRes.ok) throw new Error('Échec création repo');
+                    
+                    const repoData = await createRes.json();
+                    const repoUrl = repoData.html_url;
+                    
+                    const files = app.parseGeneratedFiles(generatedContent);
+                    
+                    for (const file of files) {
+                        await fetch(`https://api.github.com/repos/${username}/${repoName}/contents/${file.path}`, {
+                            method: 'PUT',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                message: `Add ${file.path}`,
+                                content: btoa(unescape(encodeURIComponent(file.content)))
+                            })
+                        });
+                    }
+                    
+                    return repoUrl;
+                } catch (e) {
+                    console.error('Repo creation error:', e);
+                    throw e;
+                }
+            },
+
+            parseGeneratedFiles(markdown) {
+                const files = [];
+                const codeBlockRegex = /###\s+(.+?)\n```(?:\w+)?\n([\s\S]+?)\n```/g;
+                let match;
+                
+                while ((match = codeBlockRegex.exec(markdown)) !== null) {
+                    const path = match[1].trim();
+                    const content = match[2].trim();
+                    files.push({ path, content });
+                }
+                
+                if (files.length === 0) {
+                    files.push({
+                        path: 'README.md',
+                        content: markdown
+                    });
+                }
+                
+                return files;
             },
 
             async callAI(providerKey, config, prompt) {
@@ -1053,11 +1240,48 @@ Sois exhaustif et professionnel.`;
                 return '';
             },
 
-            displayResults(markdown) {
+            displayResults(markdown, meta = {}) {
                 document.getElementById('results-loader').classList.add('hidden');
                 const content = document.getElementById('results-content');
+                const markdownDiv = document.getElementById('results-markdown');
+                const actionsDiv = document.getElementById('results-actions');
+                
                 content.classList.remove('hidden');
-                content.innerHTML = marked.parse(markdown);
+                markdownDiv.innerHTML = marked.parse(markdown);
+                
+                let actionsHtml = '';
+                
+                if (meta.type === 'audit' && meta.prUrl) {
+                    actionsHtml = `
+                        <h3 class="font-bold text-white text-lg mb-4">✅ Analyse Terminée</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <a href="${meta.prUrl}" target="_blank" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-xl text-center">
+                                <i data-lucide="git-pull-request" class="w-4 h-4 inline mr-2"></i>
+                                Voir la Pull Request
+                            </a>
+                            <a href="${meta.repoUrl}" target="_blank" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-6 rounded-xl text-center">
+                                <i data-lucide="github" class="w-4 h-4 inline mr-2"></i>
+                                Voir le Repository
+                            </a>
+                        </div>
+                    `;
+                } else if (meta.type === 'generation' && meta.repoUrl) {
+                    actionsHtml = `
+                        <h3 class="font-bold text-white text-lg mb-4">🚀 Projet Créé avec Succès</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <a href="${meta.repoUrl}" target="_blank" class="bg-nexus-600 hover:bg-nexus-500 text-white font-bold py-3 px-6 rounded-xl text-center">
+                                <i data-lucide="github" class="w-4 h-4 inline mr-2"></i>
+                                Voir sur GitHub
+                            </a>
+                            <button onclick="app.toast('Lien copié!', 'success'); navigator.clipboard.writeText('${meta.repoUrl}')" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-6 rounded-xl">
+                                <i data-lucide="copy" class="w-4 h-4 inline mr-2"></i>
+                                Copier le Lien
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                actionsDiv.innerHTML = actionsHtml;
                 lucide.createIcons();
             },
 
@@ -1077,10 +1301,16 @@ Sois exhaustif et professionnel.`;
                         return `
                             <div class="glass p-6 rounded-xl">
                                 <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-white text-lg">${proj.id}</h3>
+                                    <div class="flex-grow">
+                                        <div class="flex items-center gap-2">
+                                            <h3 class="font-bold text-white text-lg">${proj.id}</h3>
+                                            ${proj.type === 'generated' ? '<span class="text-xs bg-nexus-500 px-2 py-1 rounded">Généré</span>' : '<span class="text-xs bg-blue-500 px-2 py-1 rounded">Audité</span>'}
+                                        </div>
                                         <p class="text-xs text-slate-500 mt-1">Ajouté le ${new Date(proj.addedAt).toLocaleDateString()}</p>
-                                        ${proj.type === 'generated' ? '<span class="text-xs bg-nexus-500 px-2 py-1 rounded mt-2 inline-block">Généré</span>' : ''}
+                                        ${proj.githubUrl ? `<a href="${proj.githubUrl}" target="_blank" class="text-xs text-nexus-400 hover:text-nexus-300 mt-2 inline-flex items-center gap-1">
+                                            <i data-lucide="external-link" class="w-3 h-3"></i>
+                                            Voir sur GitHub
+                                        </a>` : ''}
                                     </div>
                                     <button onclick="app.deleteProject('${proj.id}')" class="text-red-500 hover:text-red-400">
                                         <i data-lucide="trash-2" class="w-4 h-4"></i>
@@ -1109,11 +1339,12 @@ Sois exhaustif et professionnel.`;
                     list.innerHTML = analyses.map(analysis => {
                         const type = analysis.type === 'generation' ? 'Génération' : 'Audit';
                         const icon = analysis.type === 'generation' ? 'wand-2' : 'file-search';
+                        const color = analysis.type === 'generation' ? 'nexus' : 'blue';
                         return `
                             <div class="glass p-6 rounded-xl">
                                 <div class="flex items-start gap-4">
-                                    <div class="w-10 h-10 bg-nexus-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
-                                        <i data-lucide="${icon}" class="w-5 h-5 text-nexus-400"></i>
+                                    <div class="w-10 h-10 bg-${color}-500/10 rounded-xl flex items-center justify-center flex-shrink-0">
+                                        <i data-lucide="${icon}" class="w-5 h-5 text-${color}-400"></i>
                                     </div>
                                     <div class="flex-grow">
                                         <div class="flex justify-between">
@@ -1122,6 +1353,10 @@ Sois exhaustif et professionnel.`;
                                         </div>
                                         <p class="text-xs text-slate-400 mt-1">Provider: ${analysis.provider} • Modèle: ${analysis.model}</p>
                                         ${analysis.persona ? `<p class="text-xs text-nexus-400 mt-1">Persona: ${PERSONAS[analysis.persona].name}</p>` : ''}
+                                        ${analysis.repoUrl ? `<a href="${analysis.repoUrl}" target="_blank" class="text-xs text-nexus-400 hover:text-nexus-300 mt-2 inline-flex items-center gap-1">
+                                            <i data-lucide="external-link" class="w-3 h-3"></i>
+                                            Voir sur GitHub
+                                        </a>` : ''}
                                     </div>
                                 </div>
                             </div>
@@ -1216,19 +1451,10 @@ Sois exhaustif et professionnel.`;
 
             addProviderKey() {
                 const providers = Object.keys(PROVIDERS);
-                const unconfigured = providers.find(async k => {
-                    const cfg = await DB.get('providers', k);
-                    return !cfg?.apiKey;
-                });
-                if (unconfigured) {
-                    app.openProviderModal(unconfigured);
-                } else {
-                    app.openProviderModal(providers[0]);
-                }
+                app.openProviderModal(providers[0]);
             }
         };
 
-        // Initialize app when DOM is ready
         window.addEventListener('DOMContentLoaded', () => {
             app.init();
         });
