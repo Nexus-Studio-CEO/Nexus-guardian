@@ -563,7 +563,21 @@
             },
 
             async loadConfig() {
-                if (!csop) return;
+                if (!csop) {
+                    // Fallback localStorage si CSOP pas encore prêt
+                    const stored = localStorage.getItem('nexus_config_backup');
+                    if (stored) {
+                        const config = JSON.parse(stored);
+                        if (config?.github?.token) {
+                            document.getElementById('cfg-gh-token').value = config.github.token;
+                        }
+                        if (config?.github?.username) {
+                            document.getElementById('cfg-gh-username').value = config.github.username;
+                        }
+                    }
+                    return;
+                }
+                
                 try {
                     const config = await csop.dispatch('storage.get', { key: 'nexus_config' });
                     if (config?.data?.github?.token) {
@@ -573,26 +587,57 @@
                         document.getElementById('cfg-gh-username').value = config.data.github.username;
                     }
                 } catch (e) {
-                    console.log('No config found, using defaults');
+                    console.log('No config found in CSOP, checking localStorage');
+                    // Essayer localStorage en fallback
+                    const stored = localStorage.getItem('nexus_config_backup');
+                    if (stored) {
+                        const config = JSON.parse(stored);
+                        if (config?.github?.token) {
+                            document.getElementById('cfg-gh-token').value = config.github.token;
+                        }
+                        if (config?.github?.username) {
+                            document.getElementById('cfg-gh-username').value = config.github.username;
+                        }
+                        // Migrer vers CSOP
+                        if (csop) {
+                            await csop.dispatch('storage.save', {
+                                key: 'nexus_config',
+                                data: config
+                            });
+                        }
+                    }
                 }
             },
 
             async saveConfig() {
-                if (!csop) return app.toast('CSOP non initialisé', 'error');
+                const configData = {
+                    github: {
+                        token: document.getElementById('cfg-gh-token').value,
+                        username: document.getElementById('cfg-gh-username').value
+                    },
+                    updatedAt: Date.now()
+                };
                 
-                await csop.dispatch('storage.save', {
-                    key: 'nexus_config',
-                    data: {
-                        github: {
-                            token: document.getElementById('cfg-gh-token').value,
-                            username: document.getElementById('cfg-gh-username').value
-                        },
-                        updatedAt: Date.now()
-                    }
-                });
+                // Toujours sauver dans localStorage comme backup
+                localStorage.setItem('nexus_config_backup', JSON.stringify(configData));
                 
-                await app.log('success', 'Configuration sauvegardée', { workflow: 'config' });
-                app.toast('Configuration sauvegardée');
+                if (!csop) {
+                    app.toast('Configuration sauvegardée (localStorage)', 'warning');
+                    return;
+                }
+                
+                try {
+                    await csop.dispatch('storage.save', {
+                        key: 'nexus_config',
+                        data: configData
+                    });
+                    
+                    await app.log('success', 'Configuration sauvegardée', { workflow: 'config' });
+                    app.toast('Configuration sauvegardée');
+                } catch (e) {
+                    await app.log('error', 'Erreur sauvegarde config', { workflow: 'config', error: e.message });
+                    app.toast('Sauvegardé en localStorage uniquement', 'warning');
+                }
             },
 
             async testGitHub() {
@@ -620,11 +665,41 @@
             },
 
             async fetchUserRepos() {
-                const token = document.getElementById('cfg-gh-token').value;
-                const username = document.getElementById('cfg-gh-username').value;
+                let token, username;
+                
+                // Essayer de récupérer depuis les inputs d'abord
+                token = document.getElementById('cfg-gh-token').value;
+                username = document.getElementById('cfg-gh-username').value;
+                
+                // Si vides, essayer CSOP
+                if (!token || !username) {
+                    if (csop) {
+                        try {
+                            const config = await csop.dispatch('storage.get', { key: 'nexus_config' });
+                            token = config?.data?.github?.token;
+                            username = config?.data?.github?.username;
+                        } catch (e) {
+                            // Essayer localStorage
+                            const stored = localStorage.getItem('nexus_config_backup');
+                            if (stored) {
+                                const config = JSON.parse(stored);
+                                token = config?.github?.token;
+                                username = config?.github?.username;
+                            }
+                        }
+                    } else {
+                        // Fallback localStorage
+                        const stored = localStorage.getItem('nexus_config_backup');
+                        if (stored) {
+                            const config = JSON.parse(stored);
+                            token = config?.github?.token;
+                            username = config?.github?.username;
+                        }
+                    }
+                }
                 
                 if (!token || !username) {
-                    app.toast('Configurez GitHub Token + Username', 'error');
+                    app.toast('Configurez GitHub Token + Username dans Config', 'error');
                     app.showView('config');
                     return;
                 }
@@ -705,29 +780,52 @@
                     depth
                 });
 
-                if (!csop) {
-                    app.toast('CSOP non initialisé', 'error');
-                    return;
-                }
-
                 let leadProvider, providerConfig, token;
 
                 try {
-                    const leadCfg = await csop.dispatch('storage.get', { key: 'nexus_lead_provider' });
-                    if (!leadCfg?.data) throw new Error('Provider Lead non configuré');
-                    
-                    leadProvider = leadCfg.data;
-                    
-                    const provCfg = await csop.dispatch('storage.get', { key: `nexus_provider_${leadProvider}` });
-                    if (!provCfg?.data?.apiKey || !provCfg?.data?.selectedModel) {
-                        throw new Error('Configuration Lead incomplète');
+                    // Récupérer provider Lead
+                    if (csop) {
+                        try {
+                            const leadCfg = await csop.dispatch('storage.get', { key: 'nexus_lead_provider' });
+                            if (!leadCfg?.data) throw new Error('Provider Lead non configuré');
+                            leadProvider = leadCfg.data;
+                            
+                            const provCfg = await csop.dispatch('storage.get', { key: `nexus_provider_${leadProvider}` });
+                            if (!provCfg?.data?.apiKey || !provCfg?.data?.selectedModel) {
+                                throw new Error('Configuration Lead incomplète');
+                            }
+                            providerConfig = provCfg.data;
+                        } catch (e) {
+                            throw new Error('Configurez un Provider Lead dans Config');
+                        }
+                    } else {
+                        throw new Error('CSOP non initialisé');
                     }
-                    providerConfig = provCfg.data;
 
-                    const config = await csop.dispatch('storage.get', { key: 'nexus_config' });
-                    token = config?.data?.github?.token;
+                    // Récupérer token GitHub - multiples sources
+                    token = document.getElementById('cfg-gh-token').value;
                     
-                    if (!token) throw new Error('Token GitHub manquant');
+                    if (!token && csop) {
+                        try {
+                            const config = await csop.dispatch('storage.get', { key: 'nexus_config' });
+                            token = config?.data?.github?.token;
+                        } catch (e) {}
+                    }
+                    
+                    if (!token) {
+                        const stored = localStorage.getItem('nexus_config_backup');
+                        if (stored) {
+                            const config = JSON.parse(stored);
+                            token = config?.github?.token;
+                        }
+                    }
+                    
+                    if (!token) {
+                        throw new Error('Token GitHub manquant - Configurez-le dans Config');
+                    }
+                    
+                    await app.log('info', 'Configuration chargée avec succès', { workflow: 'audit_run', provider: leadProvider });
+                    
                 } catch (e) {
                     await app.log('error', 'Erreur configuration', { workflow: 'audit_run', error: e.message });
                     app.toast(e.message, 'error');
@@ -801,27 +899,29 @@ Fournis un rapport d'audit complet au format Markdown avec:
                         await app.log('success', 'PR créée avec succès', { workflow: 'audit_run', prUrl });
                     }
                     
-                    await csop.dispatch('storage.save', {
-                        key: `nexus_project_${owner}_${repo}`,
-                        data: {
-                            id: `${owner}/${repo}`,
-                            owner,
-                            repo,
-                            branch,
-                            type: 'audited',
-                            addedAt: Date.now(),
-                            lastAccessedAt: Date.now(),
-                            githubUrl: `https://github.com/${owner}/${repo}`,
-                            lastAudit: {
-                                timestamp: Date.now(),
-                                persona,
-                                depth,
-                                provider: leadProvider,
-                                model: providerConfig.selectedModel,
-                                prUrl
+                    if (csop) {
+                        await csop.dispatch('storage.save', {
+                            key: `nexus_project_${owner}_${repo}`,
+                            data: {
+                                id: `${owner}/${repo}`,
+                                owner,
+                                repo,
+                                branch,
+                                type: 'audited',
+                                addedAt: Date.now(),
+                                lastAccessedAt: Date.now(),
+                                githubUrl: `https://github.com/${owner}/${repo}`,
+                                lastAudit: {
+                                    timestamp: Date.now(),
+                                    persona,
+                                    depth,
+                                    provider: leadProvider,
+                                    model: providerConfig.selectedModel,
+                                    prUrl
+                                }
                             }
-                        }
-                    });
+                        });
+                    }
                     
                     await app.updateStats();
                     app.displayResults(aiResponse, { type: 'audit', prUrl, repoUrl: `https://github.com/${owner}/${repo}` });
