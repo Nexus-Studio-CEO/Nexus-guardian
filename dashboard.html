@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS Guardian | Dashboard</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 850: '#1e293b', 900: '#0f172a' },
+                        primary: { 400: '#3b82f6', 500: '#2563eb', 600: '#1d4ed8' },
+                        accent: { 400: '#8b5cf6', 500: '#7c3aed' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+    <nav class="glass-panel sticky top-0 z-40 border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-primary-600 p-2 rounded-xl shadow-lg">
+                    <i data-lucide="cpu" class="text-white w-5 h-5"></i>
+                </div>
+                <span class="font-extrabold text-xl">NEXUS <span class="text-primary-500">Guardian</span></span>
+            </div>
+            
+            <div class="hidden md:flex items-center gap-4">
+                <a href="./repos.html" class="text-sm font-medium hover:text-primary-500 transition-colors px-3 py-2">Repos</a>
+                <a href="./logs.html" class="text-sm font-medium hover:text-primary-500 transition-colors px-3 py-2">Logs</a>
+                <a href="./config.html" class="p-2 hover:bg-white/5 rounded-full transition-colors">
+                    <i data-lucide="settings" class="w-5 h-5 text-slate-400"></i>
+                </a>
+            </div>
+
+            <button onclick="toggleMobileMenu()" class="md:hidden p-2 text-slate-300 hover:bg-slate-800 rounded-lg">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </div>
+    </nav>
+
+    <div id="mobile-menu" class="hidden md:hidden fixed inset-0 z-50 bg-slate-900/95 backdrop-blur-xl pt-20 px-6">
+        <button onclick="toggleMobileMenu()" class="absolute top-4 right-4 p-2 text-slate-400">
+            <i data-lucide="x" class="w-6 h-6"></i>
+        </button>
+        <div class="space-y-2">
+            <a href="./repos.html" class="block p-3 rounded-xl bg-slate-800 text-white">Repos</a>
+            <a href="./logs.html" class="block p-3 rounded-xl text-slate-300">Logs</a>
+            <a href="./config.html" class="block p-3 rounded-xl text-slate-300">Configuration</a>
+        </div>
+    </div>
+
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="text-center space-y-4 mb-12">
+            <h1 class="text-5xl font-black text-white">Bienvenue dans le <span class="text-primary-500">Nexus</span>.</h1>
+            <p class="text-slate-400 text-lg max-w-2xl mx-auto">Choisissez votre workflow. Analyse, Génération ou Croissance.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-12">
+            <div class="glass-panel p-4 rounded-xl text-center">
+                <div class="text-3xl font-black text-primary-500" id="stat-projects">0</div>
+                <div class="text-xs text-slate-500 uppercase">Projets</div>
+            </div>
+            <div class="glass-panel p-4 rounded-xl text-center">
+                <div class="text-3xl font-black text-blue-500" id="stat-analyses">0</div>
+                <div class="text-xs text-slate-500 uppercase">Analyses</div>
+            </div>
+            <div class="glass-panel p-4 rounded-xl text-center">
+                <div class="text-3xl font-black text-green-500" id="stat-providers">0</div>
+                <div class="text-xs text-slate-500 uppercase">Providers</div>
+            </div>
+            <div class="glass-panel p-4 rounded-xl text-center">
+                <div class="text-3xl font-black text-purple-500" id="stat-logs">0</div>
+                <div class="text-xs text-slate-500 uppercase">Logs</div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <a href="./audit.html" class="glass-panel p-8 rounded-2xl hover:scale-105 transition-all group">
+                <div class="w-12 h-12 bg-blue-500/10 rounded-xl flex items-center justify-center text-blue-400 mb-4 group-hover:scale-110 transition-transform">
+                    <i data-lucide="shield-check" class="w-6 h-6"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">Mode Audit</h2>
+                <p class="text-slate-400 text-sm">Analyse et corrections automatiques avec tests</p>
+            </a>
+
+            <a href="./vibe.html" class="glass-panel p-8 rounded-2xl hover:scale-105 transition-all group">
+                <div class="w-12 h-12 bg-primary-500/10 rounded-xl flex items-center justify-center text-primary-400 mb-4 group-hover:scale-110 transition-transform">
+                    <i data-lucide="sparkles" class="w-6 h-6"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">Vibe Coding</h2>
+                <p class="text-slate-400 text-sm">Génération de projets professionnels complets</p>
+            </a>
+
+            <a href="./contributor.html" class="glass-panel p-8 rounded-2xl hover:scale-105 transition-all group">
+                <div class="w-12 h-12 bg-green-500/10 rounded-xl flex items-center justify-center text-green-400 mb-4 group-hover:scale-110 transition-transform">
+                    <i data-lucide="git-pull-request" class="w-6 h-6"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">Contributor</h2>
+                <p class="text-slate-400 text-sm">Contribution intelligente à des repos externes</p>
+            </a>
+
+            <a href="./growth.html" class="glass-panel p-8 rounded-2xl hover:scale-105 transition-all group">
+                <div class="w-12 h-12 bg-yellow-500/10 rounded-xl flex items-center justify-center text-yellow-400 mb-4 group-hover:scale-110 transition-transform">
+                    <i data-lucide="trending-up" class="w-6 h-6"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">Visibility Growth</h2>
+                <p class="text-slate-400 text-sm">Stratégie pour gagner 100+ stars en 7 jours</p>
+            </a>
+
+            <a href="./repos.html" class="glass-panel p-8 rounded-2xl hover:scale-105 transition-all group">
+                <div class="w-12 h-12 bg-purple-500/10 rounded-xl flex items-center justify-center text-purple-400 mb-4 group-hover:scale-110 transition-transform">
+                    <i data-lucide="folder-git-2" class="w-6 h-6"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">Mes Repos</h2>
+                <p class="text-slate-400 text-sm">Tous vos repositories GitHub</p>
+            </a>
+
+            <a href="./config.html" class="glass-panel p-8 rounded-2xl hover:scale-105 transition-all group">
+                <div class="w-12 h-12 bg-slate-500/10 rounded-xl flex items-center justify-center text-slate-400 mb-4 group-hover:scale-110 transition-transform">
+                    <i data-lucide="settings" class="w-6 h-6"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">Configuration</h2>
+                <p class="text-slate-400 text-sm">API Keys et préférences</p>
+            </a>
+        </div>
+    </main>
+
+    <script src="./assets/crypto.js"></script>
+    <script src="./assets/shared.js"></script>
+    <script>
+        lucide.createIcons();
+
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const unlocked = await window.NexusCrypto.isUnlocked();
+            if (!unlocked) {
+                window.location.href = './login.html';
+                return;
+            }
+
+            await window.NexusApp.updateStats();
+        });
+    </script>
+</body>
+</html>
