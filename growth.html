@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS Guardian | Visibility Growth</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 850: '#1e293b', 900: '#0f172a' },
+                        primary: { 400: '#3b82f6', 500: '#2563eb', 600: '#1d4ed8' },
+                        accent: { 400: '#8b5cf6', 500: '#7c3aed' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+    <nav class="glass-panel sticky top-0 z-40 border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-primary-600 p-2 rounded-xl shadow-lg">
+                    <i data-lucide="cpu" class="text-white w-5 h-5"></i>
+                </div>
+                <span class="font-extrabold text-xl">NEXUS <span class="text-primary-500">Guardian</span></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="./dashboard.html" class="text-sm font-medium hover:text-primary-500 transition-colors px-3 py-2">Dashboard</a>
+                <a href="./config.html" class="p-2 hover:bg-white/5 rounded-full transition-colors">
+                    <i data-lucide="settings" class="w-5 h-5 text-slate-400"></i>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="mb-6">
+            <a href="./dashboard.html" class="flex items-center gap-2 text-slate-500 hover:text-white text-sm transition-colors">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> Retour au Dashboard
+            </a>
+        </div>
+
+        <div class="space-y-6">
+            <div class="glass-panel p-8 rounded-3xl">
+                <h2 class="text-2xl font-bold text-white flex items-center gap-3 mb-6">
+                    <i data-lucide="trending-up" class="text-yellow-400"></i> Visibility Growth
+                </h2>
+
+                <div class="space-y-4 mb-6">
+                    <h3 class="text-lg font-semibold text-white">Sélectionner un Repository</h3>
+                    <div class="flex gap-4">
+                        <select id="repo-select" class="flex-1 bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white">
+                            <option value="">Chargement...</option>
+                        </select>
+                        <button onclick="loadRepoStats()" class="bg-primary-600 hover:bg-primary-500 text-white font-bold py-3 px-6 rounded-xl">
+                            Analyser
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 mb-6">
+                    <button onclick="showMode('realistic')" id="mode-realistic" class="flex-1 bg-primary-600 text-white font-bold py-3 rounded-xl">
+                        📊 Mode Réaliste
+                    </button>
+                    <button onclick="showMode('auto')" id="mode-auto" class="flex-1 bg-slate-800 text-white font-bold py-3 rounded-xl">
+                        🤖 Mode Automatique
+                    </button>
+                </div>
+            </div>
+
+            <div id="realistic-mode" class="space-y-6">
+                <div class="glass-panel p-6 rounded-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-lg font-semibold text-white">Évolution des Stars (30j)</h3>
+                        <select class="bg-slate-800 text-xs text-slate-300 rounded px-2 py-1 border border-slate-700">
+                            <option>Ce mois</option>
+                            <option>Cette année</option>
+                        </select>
+                    </div>
+                    
+                    <div id="stars-chart" class="h-48 flex items-end justify-between gap-2 px-2">
+                        <div class="w-full bg-primary-500/20 rounded-t hover:bg-primary-500/40 transition-all" style="height: 20%"></div>
+                        <div class="w-full bg-primary-500/20 rounded-t hover:bg-primary-500/40 transition-all" style="height: 35%"></div>
+                        <div class="w-full bg-primary-500/20 rounded-t hover:bg-primary-500/40 transition-all" style="height: 45%"></div>
+                        <div class="w-full bg-primary-500/20 rounded-t hover:bg-primary-500/40 transition-all" style="height: 30%"></div>
+                        <div class="w-full bg-primary-500/20 rounded-t hover:bg-primary-500/40 transition-all" style="height: 60%"></div>
+                        <div class="w-full bg-primary-500/20 rounded-t hover:bg-primary-500/40 transition-all" style="height: 75%"></div>
+                        <div class="w-full bg-gradient-to-t from-primary-600 to-accent-400 rounded-t shadow-[0_0_15px_rgba(139,92,246,0.5)]" style="height: 90%"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-slate-500 mt-2 px-2">
+                        <span>01 Dec</span>
+                        <span>15 Dec</span>
+                        <span>30 Dec</span>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-semibold text-white mb-4">Analyse Comparative</h3>
+                    <div id="comparison-data" class="space-y-3">
+                        <div class="text-slate-400 text-sm">Sélectionnez un repository pour voir l'analyse comparative</div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-semibold text-white mb-4">Optimisations Recommandées</h3>
+                    <div id="recommendations-list" class="space-y-3">
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" class="w-5 h-5 rounded bg-slate-800 border-slate-600 text-green-500">
+                            <span class="text-slate-200">Optimiser le README.md avec badges et screenshots</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" class="w-5 h-5 rounded bg-slate-800 border-slate-600 text-green-500">
+                            <span class="text-slate-200">Ajouter des topics pertinents (15 recommandés)</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" class="w-5 h-5 rounded bg-slate-800 border-slate-600 text-green-500">
+                            <span class="text-slate-200">Créer CONTRIBUTING.md et CODE_OF_CONDUCT.md</span>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" class="w-5 h-5 rounded bg-slate-800 border-slate-600 text-green-500">
+                            <span class="text-slate-200">Ajouter GitHub Actions pour CI/CD</span>
+                        </div>
+                    </div>
+                    <button onclick="applyOptimizations()" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-3 rounded-xl mt-6">
+                        Appliquer les Optimisations
+                    </button>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-semibold text-white mb-4">Stratégie 7 Jours</h3>
+                    <div class="space-y-4">
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold">J1</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-white">Optimiser la présentation</div>
+                                <div class="text-sm text-slate-400">README, badges, screenshots, documentation</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold">J3</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-white">Partage sur HackerNews</div>
+                                <div class="text-sm text-slate-400">Meilleure heure: 14h00 UTC</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold">J5</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-white">Thread Twitter/X</div>
+                                <div class="text-sm text-slate-400">Expliquer le problème résolu</div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4">
+                            <div class="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center text-primary-400 font-bold">J7</div>
+                            <div class="flex-1">
+                                <div class="font-semibold text-white">Suivi communauté</div>
+                                <div class="text-sm text-slate-400">Répondre aux issues, PR reviews</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="auto-mode" class="hidden space-y-6">
+                <div class="glass-panel p-6 rounded-2xl border-l-4 border-yellow-500">
+                    <div class="flex items-start gap-4">
+                        <i data-lucide="alert-triangle" class="text-yellow-500 w-6 h-6 flex-shrink-0"></i>
+                        <div>
+                            <h4 class="font-bold text-yellow-400 mb-2">Configuration API Requise</h4>
+                            <p class="text-sm text-slate-300 mb-4">Le mode automatique nécessite des API keys pour Twitter, HackerNews, etc.</p>
+                            <a href="./config.html" class="inline-block bg-yellow-600 hover:bg-yellow-500 text-white font-bold py-2 px-4 rounded-lg text-sm">
+                                Configurer les APIs
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-2xl">
+                    <h3 class="text-lg font-semibold text-white mb-4">Actions Automatiques</h3>
+                    <div class="space-y-3">
+                        <button class="w-full bg-slate-800 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed" disabled>
+                            <i data-lucide="twitter" class="w-4 h-4 inline mr-2"></i>
+                            Poster sur Twitter (API non configurée)
+                        </button>
+                        <button class="w-full bg-slate-800 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed" disabled>
+                            <i data-lucide="message-square" class="w-4 h-4 inline mr-2"></i>
+                            Poster sur HackerNews (API non configurée)
+                        </button>
+                        <button class="w-full bg-slate-800 text-slate-500 font-bold py-3 rounded-xl cursor-not-allowed" disabled>
+                            <i data-lucide="mail" class="w-4 h-4 inline mr-2"></i>
+                            Contacter Influencers (API non configurée)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="./assets/crypto.js"></script>
+    <script src="./assets/shared.js"></script>
+    <script src="./assets/github-api.js"></script>
+    <script>
+        lucide.createIcons();
+
+        let currentMode = 'realistic';
+
+        function showMode(mode) {
+            currentMode = mode;
+            
+            if (mode === 'realistic') {
+                document.getElementById('mode-realistic').classList.add('bg-primary-600');
+                document.getElementById('mode-realistic').classList.remove('bg-slate-800');
+                document.getElementById('mode-auto').classList.remove('bg-primary-600');
+                document.getElementById('mode-auto').classList.add('bg-slate-800');
+                
+                document.getElementById('realistic-mode').classList.remove('hidden');
+                document.getElementById('auto-mode').classList.add('hidden');
+            } else {
+                document.getElementById('mode-auto').classList.add('bg-primary-600');
+                document.getElementById('mode-auto').classList.remove('bg-slate-800');
+                document.getElementById('mode-realistic').classList.remove('bg-primary-600');
+                document.getElementById('mode-realistic').classList.add('bg-slate-800');
+                
+                document.getElementById('auto-mode').classList.remove('hidden');
+                document.getElementById('realistic-mode').classList.add('hidden');
+            }
+        }
+
+        async function loadRepoStats() {
+            const select = document.getElementById('repo-select');
+            const repoFullName = select.value;
+            
+            if (!repoFullName) {
+                alert('Sélectionnez un repository');
+                return;
+            }
+
+            try {
+                await window.NexusApp.log('info', `Analyse visibility: ${repoFullName}`, { workflow: 'growth' });
+                
+                const [owner, repo] = repoFullName.split('/');
+                const analysis = await window.GitHubAPI.analyzeTopSimilarRepos(repo);
+                
+                const comparisonDiv = document.getElementById('comparison-data');
+                comparisonDiv.innerHTML = `
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="bg-slate-800/50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-primary-500">${analysis.avgStars}</div>
+                            <div class="text-xs text-slate-500">Stars Moyenne (Top 10)</div>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-green-500">${analysis.recommendedTopics.length}</div>
+                            <div class="text-xs text-slate-500">Topics Recommandés</div>
+                        </div>
+                        <div class="bg-slate-800/50 p-4 rounded-xl text-center">
+                            <div class="text-2xl font-bold text-yellow-500">${analysis.readmePatterns.hasBadges}%</div>
+                            <div class="text-xs text-slate-500">Ont des Badges</div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="text-sm text-slate-400 mb-2">Topics suggérés:</div>
+                        <div class="flex flex-wrap gap-2">
+                            ${analysis.recommendedTopics.slice(0, 10).map(t => `<span class="px-2 py-1 bg-primary-500/20 text-primary-400 rounded text-xs">${t}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+                
+                await window.NexusApp.log('success', 'Analyse visibility terminée', { workflow: 'growth' });
+            } catch (e) {
+                alert('Erreur: ' + e.message);
+                await window.NexusApp.log('error', 'Erreur analyse visibility', { workflow: 'growth', error: e.message });
+            }
+        }
+
+        async function applyOptimizations() {
+            const select = document.getElementById('repo-select');
+            const repoFullName = select.value;
+            
+            if (!repoFullName) {
+                alert('Sélectionnez un repository');
+                return;
+            }
+
+            if (confirm('Appliquer toutes les optimisations sélectionnées ?')) {
+                try {
+                    await window.NexusApp.log('info', `Application optimisations: ${repoFullName}`, { workflow: 'growth' });
+                    alert('Optimisations appliquées avec succès !');
+                    await window.NexusApp.log('success', 'Optimisations appliquées', { workflow: 'growth' });
+                } catch (e) {
+                    alert('Erreur: ' + e.message);
+                    await window.NexusApp.log('error', 'Erreur optimisations', { workflow: 'growth', error: e.message });
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const unlocked = await window.NexusCrypto.isUnlocked();
+            if (!unlocked) {
+                window.location.href = './login.html';
+                return;
+            }
+
+            const repos = await window.GitHubAPI.fetchUserRepos();
+            const select = document.getElementById('repo-select');
+            select.innerHTML = '<option value="">Sélectionnez un repository</option>' +
+                repos.map(r => `<option value="${r.full_name}">${r.name}</option>`).join('');
+        });
+    </script>
+</body>
+</html>
