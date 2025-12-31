@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="fr" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEXUS Guardian | Configuration</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        slate: { 850: '#1e293b', 900: '#0f172a' },
+                        primary: { 400: '#3b82f6', 500: '#2563eb', 600: '#1d4ed8' },
+                        accent: { 400: '#8b5cf6', 500: '#7c3aed' }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .provider-card:hover {
+            transform: translateY(-2px);
+            transition: all 0.3s;
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .status-connected { background: #10b981; box-shadow: 0 0 8px #10b981; }
+        .status-disconnected { background: #6b7280; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+    <nav class="glass-panel sticky top-0 z-40 border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="bg-primary-600 p-2 rounded-xl shadow-lg">
+                    <i data-lucide="cpu" class="text-white w-5 h-5"></i>
+                </div>
+                <span class="font-extrabold text-xl">NEXUS <span class="text-primary-500">Guardian</span></span>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="./dashboard.html" class="text-sm font-medium hover:text-primary-500 transition-colors px-3 py-2">Dashboard</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="mb-6">
+            <a href="./dashboard.html" class="flex items-center gap-2 text-slate-500 hover:text-white text-sm transition-colors">
+                <i data-lucide="chevron-left" class="w-4 h-4"></i> Retour au Dashboard
+            </a>
+        </div>
+
+        <h1 class="text-3xl font-black text-white mb-8">Configuration</h1>
+
+        <div class="space-y-6">
+            <div class="glass-panel p-8 rounded-3xl space-y-6">
+                <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                    <i data-lucide="key" class="text-yellow-500"></i> GitHub Configuration
+                </h2>
+                
+                <div class="glass-panel p-6 rounded-xl border-l-4 border-yellow-500 bg-yellow-500/5">
+                    <div class="flex items-start gap-3">
+                        <i data-lucide="shield-alert" class="text-yellow-500 w-5 h-5 flex-shrink-0 mt-1"></i>
+                        <div class="text-sm text-slate-300">
+                            <p class="font-bold text-yellow-400 mb-1">⚠️ Sécurité des Tokens</p>
+                            <p>Votre token GitHub est chiffré avec votre Master Password (AES-256). Créez un token dédié avec les permissions minimales nécessaires.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">GitHub Token</label>
+                        <input type="password" id="github-token" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white" placeholder="ghp_...">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Username GitHub</label>
+                        <input type="text" id="github-username" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white" placeholder="votre-username">
+                    </div>
+                    <button onclick="testGitHub()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-6 rounded-xl">
+                        Tester la Connexion
+                    </button>
+                </div>
+            </div>
+
+            <div class="glass-panel p-8 rounded-3xl space-y-6">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                        <i data-lucide="brain" class="text-primary-500"></i> Providers IA
+                    </h2>
+                    <button onclick="addProvider()" class="bg-primary-600 hover:bg-primary-500 text-white font-bold py-2 px-4 rounded-xl text-sm">
+                        + Ajouter Provider
+                    </button>
+                </div>
+
+                <div class="glass-panel p-6 rounded-xl border-l-4 border-primary-500 bg-primary-500/5">
+                    <div class="flex items-start gap-3">
+                        <i data-lucide="info" class="text-primary-500 w-5 h-5 flex-shrink-0 mt-1"></i>
+                        <div class="text-sm text-slate-300">
+                            <p class="font-bold text-primary-400 mb-1">Configuration Multi-Provider</p>
+                            <p>Configurez plusieurs providers avec des rôles différents. Le provider <strong>Lead</strong> orchestre les analyses, les <strong>Workers</strong> exécutent les tâches.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="providers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+            </div>
+
+            <button onclick="saveConfig()" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-4 rounded-xl shadow-lg">
+                Sauvegarder la Configuration
+            </button>
+        </div>
+    </main>
+
+    <div id="provider-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="glass-panel p-8 rounded-3xl max-w-2xl w-full space-y-6">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold text-white" id="modal-provider-name"></h3>
+                <button onclick="closeModal()" class="text-slate-500 hover:text-white">
+                    <i data-lucide="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Clé API</label>
+                    <input type="password" id="modal-api-key" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white">
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Rôle</label>
+                    <select id="modal-role" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white">
+                        <option value="">Désactivé</option>
+                        <option value="lead">Lead (Chef d'orchestre)</option>
+                        <option value="worker">Worker (Exécutant)</option>
+                    </select>
+                </div>
+                
+                <button onclick="fetchModels()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-xl">
+                    Charger les Modèles
+                </button>
+                
+                <div id="models-section" class="hidden space-y-2">
+                    <label class="block text-xs font-bold text-slate-500 uppercase">Modèles Disponibles</label>
+                    <select id="modal-model" class="w-full bg-slate-900 border border-white/5 rounded-xl px-4 py-3 text-white"></select>
+                </div>
+            </div>
+            
+            <button onclick="saveProvider()" class="w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-4 rounded-xl">
+                Sauvegarder Provider
+            </button>
+        </div>
+    </div>
+
+    <script src="./assets/crypto.js"></script>
+    <script src="./assets/shared.js"></script>
+    <script src="./assets/ai-engine.js"></script>
+    <script>
+        lucide.createIcons();
+
+        let currentProvider = null;
+
+        const PROVIDERS = {
+            anthropic: { name: 'Anthropic Claude', type: 'paid', icon: 'brain' },
+            openai: { name: 'OpenAI GPT', type: 'paid', icon: 'zap' },
+            google: { name: 'Google Gemini', type: 'free', icon: 'globe' },
+            groq: { name: 'Groq', type: 'free', icon: 'rocket' },
+            openrouter: { name: 'OpenRouter', type: 'paid', icon: 'network' },
+            local: { name: 'IA Locale (Ollama)', type: 'free', icon: 'hard-drive' }
+        };
+
+        async function loadConfig() {
+            const config = await window.NexusCrypto.getDecryptedData('nexus_config');
+            
+            if (config?.github) {
+                document.getElementById('github-token').value = config.github.token || '';
+                document.getElementById('github-username').value = config.github.username || '';
+            }
+
+            await renderProviders();
+        }
+
+        async function renderProviders() {
+            const grid = document.getElementById('providers-grid');
+            const providersHtml = [];
+
+            for (const [key, info] of Object.entries(PROVIDERS)) {
+                const providerData = await window.NexusCrypto.getDecryptedData(`nexus_provider_${key}`) || {};
+                const isConnected = providerData.apiKey && providerData.role;
+
+                providersHtml.push(`
+                    <div onclick="openProviderModal('${key}')" class="provider-card glass-panel p-4 rounded-xl cursor-pointer hover:border-primary-500 border border-white/5 transition-all">
+                        <div class="flex justify-between items-start mb-3">
+                            <div>
+                                <div class="font-bold text-white">${info.name}</div>
+                                <div class="text-xs text-slate-500">${info.type === 'free' ? 'Gratuit' : 'Payant'}</div>
+                            </div>
+                            <span class="status-dot ${isConnected ? 'status-connected' : 'status-disconnected'}"></span>
+                        </div>
+                        ${providerData.role ? `<div class="text-xs text-primary-400 font-bold uppercase">${providerData.role}</div>` : ''}
+                        ${providerData.selectedModel ? `<div class="text-xs text-slate-600 font-mono mt-1 truncate">${providerData.selectedModel}</div>` : ''}
+                    </div>
+                `);
+            }
+
+            grid.innerHTML = providersHtml.join('');
+        }
+
+        function addProvider() {
+            openProviderModal(Object.keys(PROVIDERS)[0]);
+        }
+
+        async function openProviderModal(providerKey) {
+            currentProvider = providerKey;
+            const info = PROVIDERS[providerKey];
+            const providerData = await window.NexusCrypto.getDecryptedData(`nexus_provider_${providerKey}`) || {};
+
+            document.getElementById('modal-provider-name').textContent = info.name;
+            document.getElementById('modal-api-key').value = providerData.apiKey || '';
+            document.getElementById('modal-role').value = providerData.role || '';
+            
+            if (providerData.models && providerData.models.length > 0) {
+                const select = document.getElementById('modal-model');
+                select.innerHTML = providerData.models.map(m => 
+                    `<option value="${m}" ${m === providerData.selectedModel ? 'selected' : ''}>${m}</option>`
+                ).join('');
+                document.getElementById('models-section').classList.remove('hidden');
+            } else {
+                document.getElementById('models-section').classList.add('hidden');
+            }
+
+            document.getElementById('provider-modal').classList.remove('hidden');
+            document.getElementById('provider-modal').classList.add('flex');
+            lucide.createIcons();
+        }
+
+        function closeModal() {
+            document.getElementById('provider-modal').classList.add('hidden');
+            document.getElementById('provider-modal').classList.remove('flex');
+        }
+
+        async function fetchModels() {
+            const apiKey = document.getElementById('modal-api-key').value;
+            if (!apiKey) {
+                alert('Entrez une clé API');
+                return;
+            }
+
+            try {
+                const models = await window.AIEngine.fetchProviderModels(currentProvider, apiKey);
+                
+                const select = document.getElementById('modal-model');
+                select.innerHTML = models.map(m => `<option value="${m}">${m}</option>`).join('');
+                document.getElementById('models-section').classList.remove('hidden');
+
+                const providerData = await window.NexusCrypto.getDecryptedData(`nexus_provider_${currentProvider}`) || {};
+                providerData.models = models;
+                await window.NexusCrypto.setEncryptedData(`nexus_provider_${currentProvider}`, providerData);
+
+                alert(`✓ ${models.length} modèles chargés`);
+            } catch (e) {
+                alert('Erreur: ' + e.message);
+            }
+        }
+
+        async function saveProvider() {
+            const apiKey = document.getElementById('modal-api-key').value;
+            const role = document.getElementById('modal-role').value;
+            const modelSelect = document.getElementById('modal-model');
+            const selectedModel = modelSelect.value;
+
+            if (!apiKey) {
+                alert('Clé API requise');
+                return;
+            }
+
+            const providerData = await window.NexusCrypto.getDecryptedData(`nexus_provider_${currentProvider}`) || {};
+            providerData.apiKey = apiKey;
+            providerData.role = role;
+            providerData.enabled = role !== '';
+            if (selectedModel) providerData.selectedModel = selectedModel;
+
+            await window.NexusCrypto.setEncryptedData(`nexus_provider_${currentProvider}`, providerData);
+
+            if (role === 'lead') {
+                await window.NexusCrypto.setEncryptedData('nexus_lead_provider', currentProvider);
+            }
+
+            await window.NexusApp.log('success', `Provider ${currentProvider} configuré`, { workflow: 'config' });
+            
+            closeModal();
+            await renderProviders();
+            alert('Provider configuré');
+        }
+
+        async function saveConfig() {
+            const config = {
+                github: {
+                    token: document.getElementById('github-token').value,
+                    username: document.getElementById('github-username').value
+                }
+            };
+
+            await window.NexusCrypto.setEncryptedData('nexus_config', config);
+            await window.NexusApp.log('success', 'Configuration sauvegardée', { workflow: 'config' });
+            alert('Configuration sauvegardée');
+        }
+
+        async function testGitHub() {
+            const token = document.getElementById('github-token').value;
+            if (!token) {
+                alert('Entrez un token GitHub');
+                return;
+            }
+
+            try {
+                const res = await fetch('https://api.github.com/user', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    await window.NexusApp.log('success', `Connecté à GitHub: ${data.login}`, { workflow: 'github_auth' });
+                    alert(`✓ Connecté: ${data.login}`);
+                } else {
+                    alert('Token invalide');
+                }
+            } catch (e) {
+                alert('Erreur: ' + e.message);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            const unlocked = await window.NexusCrypto.isUnlocked();
+            if (!unlocked) {
+                window.location.href = './login.html';
+                return;
+            }
+
+            await loadConfig();
+        });
+    </script>
+</body>
+</html>
