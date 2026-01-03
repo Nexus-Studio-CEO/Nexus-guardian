@@ -149,6 +149,7 @@
     <script src="./assets/shared.js"></script>
     <script src="./assets/ai-engine.js"></script>
     <script src="./assets/github-api.js"></script>
+    <script src="./router.js"></script>
     <script>
         lucide.createIcons();
 
@@ -268,14 +269,7 @@
             document.getElementById('input-view').classList.remove('hidden');
         }
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            const unlocked = window.NexusCrypto.isUnlocked();
-            if (!unlocked) {
-                window.location.href = './login.html';
-            }
-        });
+        // Router handles authentication
     </script>
 </body>
 </html>
