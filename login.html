@@ -108,6 +108,7 @@
     </div>
 
     <script src="./assets/crypto.js"></script>
+    <script src="./router.js"></script>
     <script>
         lucide.createIcons();
 
@@ -136,9 +137,12 @@
             }
 
             try {
-                await window.NexusCrypto.setupMasterPassword(password);
-                alert('✓ Master Password configuré avec succès');
-                window.location.href = './dashboard.html';
+                const success = await window.NexusRouter.handleLogin(password, true);
+                if (success) {
+                    alert('✓ Master Password configuré avec succès');
+                } else {
+                    alert('Erreur lors de la configuration');
+                }
             } catch (e) {
                 alert('Erreur: ' + e.message);
             }
@@ -153,10 +157,8 @@
             }
 
             try {
-                const unlocked = await window.NexusCrypto.unlockWithPassword(password);
-                if (unlocked) {
-                    window.location.href = './dashboard.html';
-                } else {
+                const success = await window.NexusRouter.handleLogin(password, false);
+                if (!success) {
                     alert('Master Password incorrect');
                 }
             } catch (e) {
@@ -164,12 +166,12 @@
             }
         }
 
-        // Check if already setup
+        // Check if already authenticated
         window.addEventListener('DOMContentLoaded', async () => {
-            // Check if already unlocked (shouldn't happen but safety check)
-            const isUnlocked = window.NexusCrypto.isUnlocked();
-            if (isUnlocked) {
-                window.location.href = './dashboard.html';
+            await window.NexusRouter.init();
+            
+            if (window.NexusRouter.isAuthenticated()) {
+                window.NexusRouter.navigateTo('dashboard.html');
                 return;
             }
 
