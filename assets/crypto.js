@@ -146,6 +146,9 @@ window.NexusCrypto = (() => {
             masterKey = key;
             sessionUnlocked = true;
             
+            // Store session flag in sessionStorage to persist during navigation
+            sessionStorage.setItem('nexus_unlocked', 'true');
+            
             return true;
         },
 
@@ -162,6 +165,10 @@ window.NexusCrypto = (() => {
                 await decryptData(masterConfig.testData, key);
                 masterKey = key;
                 sessionUnlocked = true;
+                
+                // Store session flag in sessionStorage
+                sessionStorage.setItem('nexus_unlocked', 'true');
+                
                 return true;
             } catch (e) {
                 return false;
@@ -169,7 +176,8 @@ window.NexusCrypto = (() => {
         },
 
         isUnlocked() {
-            return sessionUnlocked;
+            // Check both memory flag and sessionStorage
+            return sessionUnlocked && sessionStorage.getItem('nexus_unlocked') === 'true';
         },
 
         async setEncryptedData(id, data) {
@@ -229,6 +237,7 @@ window.NexusCrypto = (() => {
         lock() {
             masterKey = null;
             sessionUnlocked = false;
+            sessionStorage.removeItem('nexus_unlocked');
         }
     };
 })();
