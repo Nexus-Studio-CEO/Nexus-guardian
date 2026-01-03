@@ -166,6 +166,13 @@
 
         // Check if already setup
         window.addEventListener('DOMContentLoaded', async () => {
+            // Check if already unlocked (shouldn't happen but safety check)
+            const isUnlocked = window.NexusCrypto.isUnlocked();
+            if (isUnlocked) {
+                window.location.href = './dashboard.html';
+                return;
+            }
+
             const isSetup = await window.NexusCrypto.isSetup();
             if (isSetup) {
                 showLoginStep();
