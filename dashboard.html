@@ -157,7 +157,10 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
-            const unlocked = await window.NexusCrypto.isUnlocked();
+            // Wait for crypto module to be ready
+            await new Promise(resolve => setTimeout(resolve, 100));
+            
+            const unlocked = window.NexusCrypto.isUnlocked();
             if (!unlocked) {
                 window.location.href = './login.html';
                 return;
