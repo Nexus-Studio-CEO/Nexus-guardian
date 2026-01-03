@@ -149,6 +149,7 @@
 
     <script src="./assets/crypto.js"></script>
     <script src="./assets/shared.js"></script>
+    <script src="./router.js"></script>
     <script>
         lucide.createIcons();
 
@@ -156,18 +157,7 @@
             document.getElementById('mobile-menu').classList.toggle('hidden');
         }
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            // Wait for crypto module to be ready
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            const unlocked = window.NexusCrypto.isUnlocked();
-            if (!unlocked) {
-                window.location.href = './login.html';
-                return;
-            }
-
-            await window.NexusApp.updateStats();
-        });
+        // Router handles everything
     </script>
 </body>
 </html>
