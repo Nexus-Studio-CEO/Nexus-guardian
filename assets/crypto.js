@@ -146,9 +146,6 @@ window.NexusCrypto = (() => {
             masterKey = key;
             sessionUnlocked = true;
             
-            // Store session flag in sessionStorage to persist during navigation
-            sessionStorage.setItem('nexus_unlocked', 'true');
-            
             return true;
         },
 
@@ -166,9 +163,6 @@ window.NexusCrypto = (() => {
                 masterKey = key;
                 sessionUnlocked = true;
                 
-                // Store session flag in sessionStorage
-                sessionStorage.setItem('nexus_unlocked', 'true');
-                
                 return true;
             } catch (e) {
                 return false;
@@ -176,8 +170,7 @@ window.NexusCrypto = (() => {
         },
 
         isUnlocked() {
-            // Check both memory flag and sessionStorage
-            return sessionUnlocked && sessionStorage.getItem('nexus_unlocked') === 'true';
+            return sessionUnlocked;
         },
 
         async setEncryptedData(id, data) {
@@ -237,29 +230,8 @@ window.NexusCrypto = (() => {
         lock() {
             masterKey = null;
             sessionUnlocked = false;
-            sessionStorage.removeItem('nexus_unlocked');
         }
     };
 })();
 
-// Auto-lock after 30 minutes of inactivity
-let inactivityTimer = null;
-
-function resetInactivityTimer() {
-    if (inactivityTimer) clearTimeout(inactivityTimer);
-    
-    inactivityTimer = setTimeout(() => {
-        if (window.NexusCrypto.isUnlocked()) {
-            window.NexusCrypto.lock();
-            window.location.href = './login.html';
-        }
-    }, 30 * 60 * 1000); // 30 minutes
-}
-
-if (typeof window !== 'undefined') {
-    ['mousedown', 'keydown', 'scroll', 'touchstart'].forEach(event => {
-        document.addEventListener(event, resetInactivityTimer, true);
-    });
-    
-    resetInactivityTimer();
-}
+// No auto-lock here - router.js handles session timeout
