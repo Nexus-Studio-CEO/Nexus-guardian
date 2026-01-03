@@ -175,6 +175,7 @@
     <script src="./assets/crypto.js"></script>
     <script src="./assets/shared.js"></script>
     <script src="./assets/ai-engine.js"></script>
+    <script src="./router.js"></script>
     <script>
         lucide.createIcons();
 
@@ -350,16 +351,13 @@
             }
         }
 
+        // Load config when page ready
         window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await window.NexusRouter.init();
             
-            const unlocked = window.NexusCrypto.isUnlocked();
-            if (!unlocked) {
-                window.location.href = './login.html';
-                return;
+            if (window.NexusRouter.isAuthenticated()) {
+                await loadConfig();
             }
-
-            await loadConfig();
         });
     </script>
 </body>
